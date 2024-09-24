@@ -1,0 +1,113 @@
+EGOCENTRISM BUFFING MOD:
+Default values are not indicative of default vanilla values.
+Default values:
+	Allows Egocentrism to grant generic stat boosts when stacked
+	Prevents conversion of other lunar items
+	Prioritizes items of a higher rarity while maintaining randomness
+
+Config Options:
+(int)   Initial Health Bonus: 0
+(int)   Health per stack: +5
+(int)   Initial Armor Bonus: 0
+(int)   Armor per stack: +5
+(float) Initial Regen Bonus: 0
+(float) Regen per stack: +0.3/s
+(float) Initial Movement Speed Bonus: 0
+(float) Movement Speed per stack: +2.8%
+(bool)  Movement Speed Reciprocal Stacking: true
+	= If true, movement speed stacking will have diminishing returns, up to the reciprocal stacking cap.
+	= Useful to prevent uncontrollable movement at high stacks.
+(float) Movement Speed Reciprocal Stacking Cap: 100%
+
+(bool)  Bomb Stacking: false
+	= If true, the above stacking stat bonuses apply with current bomb count instead of item count
+(bool)  Primary Replacement: false
+	= If true, replaces primary skill with a bomblet ability, unless you have Visions of Heresy
+(bool)  Passive Bomb Attack Enabled: true
+	= If false, disables bomb passive attack
+(bool)  Active Bomb Attack Enabled: false
+	= If true, using a skill will attempt to fire bombs at enemies
+(bool)  On-Hit Bomb Attack Enabled: false
+	= If true, bombs will fire at enemies that you damage
+(bool)  Bomb Generation Enabled: true
+	= If false, disables bombs completely
+
+(float) Bomb Creation Initial Rate (IR): 3 seconds
+(float) Bomb Creation Stacking Rate Multiplier (SRM): 0.75
+(float) Bomb Creation Stacking Rate Subtractor (SRS): 0
+	= Formula: IR * (SRM ^ Stacksize) - (SRS * Stacksize)
+	= Has an overall minimum value of 1/60th of a second due to vanilla limitations
+(float) Bomb Damage: 3.5
+(float) Bomb Damage Stacking: 0.1
+(int)   Bomb Initial Cap: 3
+(float) Bomb Stacking Cap: 1
+	= Rounded down after making the calculation.
+(float) Bomb Initial Range Meters: 15
+(float) Bomb Stacking Range Meters: 2.5
+
+(float) Conversion Timer (T): 60 seconds
+	= Set to a negative number to disable conversion altogether. Not recommended.
+(float) Conversion Timer Stacking Multiplier (TM): 1
+(float) Conversion Timer Stacking Subtractor (TS): 0
+	= Formula: T * (TM ^ Stacksize) - (TS * Stacksize)
+(float) Conversion Timer Minimum: 1
+(float) Conversion Timer Maximum: 120
+	= Set to a negative number for unlimited max time
+
+Conversion Type: EGOCENTRISM
+	EGOCENTRISM
+		-items are converted to egocentrism
+	LUNAR
+		-items are converted to a random lunar item, not necessarily Egocentrism
+
+Conversion Rules: WEIGHTED
+	VANILLA
+		-standard, no change. ignores rarity:priority list
+		-same as setting all values in list to 1 and selecting weighted, random tiebreaker
+	WEIGHTED
+		-randomly selects based on weighted rarity:priority list
+		-for a simple, random white/blacklist, set the priority of whitelisted rarities to 1 and/or blacklisted rarities to 0
+	PRIORITY
+		-selects the highest priority rarity available based on rarity:priority list
+	CYCLIC
+		-cycles through the rarities in order of rarity:priority list, with multiple times equal to the priority
+	KARMIC
+		-cycles through the rarities in a random order, with multiple times equal to the priority
+		-weighted chance-based selection, with guaranteed tier selection before too long, based on rarity:priority list
+		-resets "karma" every *n* conversions, where *n* is the sum of all priorities in the rarity:priority list
+		-it's like if cyclic was weighted
+
+Unavailable Rules: HIGHER
+	= Does not matter if selected conversion rule is VANILLA
+	LOWER
+		-goes down the priority list to find next lowest tier
+	HIGHER
+		-goes up the priority list to find next highest tier
+	NEXT
+		-goes down the rarity list to find the next lowest tier
+	PREVIOUS
+		-goes up the rarity list to find the next highest tier
+	REROLL
+		-attempts a new conversion, without the unavailable rarity/ies
+
+Rarity Priority Tiebreaker: ORDER
+	= Only matters if PRIORITY or CYCLIC is enabled.
+	RANDOM
+		-randomly selects the tier every roll
+		-may cause selection issues on cyclic. these issues can be avoided by using karmic instead of cyclic.
+	ORDER
+		-selects the tier that appears furthest up the list
+
+Rarity Priority List:
+	voidyellow:4,
+	yellow:4,
+	voidred:3,
+	red:3,
+	voidgreen:2,
+	green:2,
+	voidwhite:1,
+	white:1,
+	lunar:0
+	= A priority of 0 blacklists that tier from Egocentrism
+	= If a rarity is not listed here, its weight will be defaulted to 0, and thus cannot be converted by Egocentrism
+	= Higher numbers means Egocentrism is more conditioned to select that tier of item
