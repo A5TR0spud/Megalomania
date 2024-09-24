@@ -55,7 +55,7 @@ Config Options:
 	= Set to a negative number for unlimited max time
 
 (bool) Soulbind: false
-	= If true, taking damage damages nearby allies for the same amount total, and you don't take any of it.
+	= If true, damage taken be Egocentrism holders is split between all nearby allies.
 
 Conversion Type: EGOCENTRISM
 	EGOCENTRISM
@@ -102,10 +102,10 @@ Rarity Priority Tiebreaker: ORDER
 		-selects the tier that appears furthest up the list
 
 Rarity Priority List:
-	voidyellow:4,
-	yellow:4,
-	voidred:3,
-	red:3,
+	voidyellow:5,
+	voidred:4,
+	red:4,
+	yellow:3,
 	voidgreen:2,
 	green:2,
 	voidwhite:1,

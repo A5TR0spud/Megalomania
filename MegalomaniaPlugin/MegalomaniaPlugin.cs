@@ -33,6 +33,8 @@ namespace MegalomaniaPlugin
 
         #region Constants and Configs
 
+        private static ConfigEntry<bool> ConfigCompatibilityMode {  get; set; }
+
         #region defensive
         private static ConfigEntry<double> ConfigMaxHealthPerStack {  get; set; }
         private static ConfigEntry<double> ConfigRegenPerStack { get; set; }
@@ -56,11 +58,18 @@ namespace MegalomaniaPlugin
 
         #region bomb toggles
         private static ConfigEntry<bool> ConfigEnableBombs { get; set; }
-        //private static ConfigEntry<bool> ConfigBombStacking { get; set; }
+        private static ConfigEntry<bool> ConfigBombStacking { get; set; }
         //private static ConfigEntry<bool> ConfigNewPrimary { get; set; }
         private static ConfigEntry<bool> ConfigPassiveBombAttack { get; set; }
         //private static ConfigEntry<bool> ConfigActiveBombAttack { get; set; }
         //private static ConfigEntry<bool> ConfigOnHitBombAttack { get; set; }
+        #endregion
+
+        #region conversion
+        private static ConfigEntry<double> ConfigTransformTime { get; set; }
+        private static ConfigEntry<double> ConfigTransformTimePerStack { get; set; }
+        private static ConfigEntry<double> ConfigTransformTimeDiminishing { get; set; }
+        private static ConfigEntry<double> ConfigTransformTimeMax {  get; set; }
         #endregion
 
         #endregion
@@ -75,55 +84,74 @@ namespace MegalomaniaPlugin
             //Override Egocentrism code, haha. Sorry mate.
             On.RoR2.LunarSunBehavior.FixedUpdate += LunarSunBehavior_FixedUpdate;
 
-            HookLunarSunStats();
+            if (!ConfigCompatibilityMode.Value)
+                HookLunarSunStats();
         }
 
         private void CreateConfig()
         {
+            ConfigCompatibilityMode = Config.Bind("0. Main", "Compatibility Mode", false,
+               "If true, skips the hook to override Egocentrism's behavior:\n" +
+               "Disables all bomb stat and transformation changes.\n" +
+               "Other features, including stats (eg. max health), will still work.\n" +
+               "Changing requires a restart.");
+
             // STATS
             //Defense
-            ConfigMaxHealthPerStack = Config.Bind("Stats - Defensive", "Stacking Max Health", 5.0,
+            ConfigMaxHealthPerStack = Config.Bind("1. Stats - Defensive", "Stacking Max Health", 5.0,
                "A flat amount added to max health per stack.");
-            ConfigRegenPerStack = Config.Bind("Stats - Defensive", "Stacking Regeneration", 0.3,
+            ConfigRegenPerStack = Config.Bind("1. Stats - Defensive", "Stacking Regeneration", 0.3,
                "A flat amount added to base regeneration per stack. Measured in health per second.");
-            ConfigArmorPerStack = Config.Bind("Stats - Defensive", "Stacking Armor", 2.0,
+            ConfigArmorPerStack = Config.Bind("1. Stats - Defensive", "Stacking Armor", 2.0,
                "A flat amount added to armor per stack.");
-            ConfigArmorMax = Config.Bind("Stats - Defensive", "Stacking Armor Cap", 200.0,
+            ConfigArmorMax = Config.Bind("1. Stats - Defensive", "Stacking Armor Cap", 200.0,
                "Used to determine maximum armor benefit from stacking.\n" +
                "Set cap to a negative value to disable the cap.");
             //Offense
-            ConfigDamagePerStack = Config.Bind("Stats - Offensive", "Stacking Damage", 0.02,
+            ConfigDamagePerStack = Config.Bind("2. Stats - Offensive", "Stacking Damage", 0.02,
                 "A percentage increase to damage per stack.");
-            ConfigCritChancePerStack = Config.Bind("Stats - Offensive", "Stacking Crit Chance", 0.01,
+            ConfigCritChancePerStack = Config.Bind("2. Stats - Offensive", "Stacking Crit Chance", 0.01,
                 "A percentage increase to critical hit chance per stack.");
-            ConfigAttackSpeedType = Config.Bind("Stats - Offensive", "Attack Speed Diminishing Returns", false,
+            ConfigAttackSpeedType = Config.Bind("2. Stats - Offensive", "Attack Speed Diminishing Returns", false,
                 "If true, attack speed will have dimishing returns, with the limit towards infinity approaching the bonus cap.\n" +
                 "If false, attack speed will stack linearly and cap at the bonus cap.");
-            ConfigAttackSpeedPerStack = Config.Bind("Stats - Offensive", "Stacking Attack Speed", 0.028,
+            ConfigAttackSpeedPerStack = Config.Bind("2. Stats - Offensive", "Stacking Attack Speed", 0.028,
                 "A percentage used to determine how much attack speed is given per item stack.");
-            ConfigAttackSpeedBonusCap = Config.Bind("Stats - Offensive", "Bonus Attack Speed Cap", -1.0,
+            ConfigAttackSpeedBonusCap = Config.Bind("2. Stats - Offensive", "Bonus Attack Speed Cap", -1.0,
                 "A percentage used to determine the maximum attack speed boost from Egocentrism stacking.\n" +
                 "In linear mode, set cap to a negative value to disable the cap.\n" +
                 "In any mode, set cap to 0 to disable attack speed bonus entirely.");
             //Movement Speed
-            ConfigMovementSpeedType = Config.Bind("Stats - Movement Speed", "Movement Speed Diminishing Returns", true,
+            ConfigMovementSpeedType = Config.Bind("3. Stats - Movement Speed", "Movement Speed Diminishing Returns", true,
                 "If true, movement speed will have dimishing returns, with the limit towards infinity approaching the bonus cap.\n" +
                 "If false, movement speed will stack linearly and cap at the bonus cap.");
-            ConfigMovementSpeedPerStack = Config.Bind("Stats - Movement Speed", "Stacking Movement Speed", 0.028,
+            ConfigMovementSpeedPerStack = Config.Bind("3. Stats - Movement Speed", "Stacking Movement Speed", 0.028,
                 "A percentage used to determine how much speed is given per item stack.");
-            ConfigMovementSpeedBonusCap = Config.Bind("Stats - Movement Speed", "Bonus Movement Speed Cap", 9.0,
+            ConfigMovementSpeedBonusCap = Config.Bind("3. Stats - Movement Speed", "Bonus Movement Speed Cap", 9.0,
                 "A percentage used to determine the maximum speed boost from Egocentrism stacking.\n" +
                 "In linear mode, set cap to a negative value to disable the cap.\n" +
                 "In any mode, set cap to 0 to disable speed bonus entirely.");
 
             //BOMBS
             //Toggles
-            ConfigEnableBombs = Config.Bind("Bombs - Toggles", "Enable Bomb Generation", true,
+            ConfigEnableBombs = Config.Bind("4. Bombs - Toggles", "Enable Bomb Generation", true,
                 "Should bombs be generated over time at all?");
-           // ConfigBombStacking = Config.Bind("Bombs - Toggles", "Bomb Stacking", false,
-            //   "If true, the amount of bombs currently orbiting the player is used instead of the amount of Egocentrism, for stacking calculations.");
-            ConfigPassiveBombAttack = Config.Bind("Bombs - Toggles", "Passive Bomb Attack", true,
+            ConfigBombStacking = Config.Bind("4. Bombs - Toggles", "Bomb Stacking", false,
+               "If true, the amount of bombs currently orbiting the player is used instead of the amount of Egocentrism, for stacking calculations.");
+            ConfigPassiveBombAttack = Config.Bind("4. Bombs - Toggles", "Passive Bomb Attack", true,
                 "Whether the vanilla seeking behavior should apply.");
+
+            //TRANSFORMING
+            //Time
+            ConfigTransformTime = Config.Bind("5. Transform - Time", "Default Transform Timer", 60.0,
+                "The time it takes for Egocentrism to transform another item");
+            ConfigTransformTimePerStack = Config.Bind("5. Transform - Time", "Flat Time Per Stack", 0.0,
+                "Added to transform timer to increase wait time when positive and decrease when negative.");
+            ConfigTransformTimeDiminishing = Config.Bind("5. Transform - Time", "Multiplier Per Stack", 0.9,
+                "Every stack multiplies the transform timer by this value.");
+            ConfigTransformTimeMax = Config.Bind("5. Transform - Time", "Max Time", 120.0,
+                "The maximum time Egocentrism can take before transforming an item.\n" +
+                "Anything less than 1/60th of a second is forced back up to 1/60th of a second.");
 
 
             ConfigCleanup();
@@ -144,7 +172,12 @@ namespace MegalomaniaPlugin
             {
                 if (sender && sender.inventory)
                 {
-                    int count = sender.inventory.GetItemCount(DLC1Content.Items.LunarSun);
+                    int count;
+                    if (ConfigBombStacking.Value)
+                        count = sender.master.GetDeployableCount(DeployableSlot.LunarSunBomb);
+                    else
+                        count = sender.inventory.GetItemCount(DLC1Content.Items.LunarSun);
+                    
                     if (count > 0)
                     {
                         //flat health
@@ -202,30 +235,44 @@ namespace MegalomaniaPlugin
             Xoroshiro128Plus transformRng = self.GetFieldValue<Xoroshiro128Plus>("transformRng");
             projectileTimer += Time.fixedDeltaTime;
 
+            int configuredStackSize = stack;
+            if (ConfigBombStacking.Value)
+                configuredStackSize = body.master.GetDeployableCount(DeployableSlot.LunarSunBomb);
+
             #region Handle Bombs
-            if (!ConfigEnableBombs.Value)
-                goto EndBombHandling;
-            if (body.master.IsDeployableLimited(DeployableSlot.LunarSunBomb))
-                goto EndBombHandling;
-            if (projectileTimer <= 3f / (float)stack)
-                goto EndBombHandling;
-            projectileTimer = 0f;
-            FireProjectileInfo fireProjectileInfo = default(FireProjectileInfo);
-            fireProjectileInfo.projectilePrefab = projectilePrefab;
-            fireProjectileInfo.crit = body.RollCrit();
-            fireProjectileInfo.damage = body.damage * 3.6f;
-            fireProjectileInfo.damageColorIndex = DamageColorIndex.Item;
-            fireProjectileInfo.force = 0f;
-            fireProjectileInfo.owner = body.gameObject;
-            fireProjectileInfo.position = body.transform.position;
-            fireProjectileInfo.rotation = Quaternion.identity;
-            ProjectileManager.instance.FireProjectile(fireProjectileInfo);
-        #endregion
-            EndBombHandling:;
+            if (ConfigEnableBombs.Value &&
+                !body.master.IsDeployableLimited(DeployableSlot.LunarSunBomb) &&
+                projectileTimer > 3f / (float)stack)
+            {
+                projectileTimer = 0f;
+                FireProjectileInfo fireProjectileInfo = default(FireProjectileInfo);
+                fireProjectileInfo.projectilePrefab = projectilePrefab;
+                fireProjectileInfo.crit = body.RollCrit();
+                fireProjectileInfo.damage = body.damage * 3.6f;
+                fireProjectileInfo.damageColorIndex = DamageColorIndex.Item;
+                fireProjectileInfo.force = 0f;
+                fireProjectileInfo.owner = body.gameObject;
+                fireProjectileInfo.position = body.transform.position;
+                fireProjectileInfo.rotation = Quaternion.identity;
+                ProjectileManager.instance.FireProjectile(fireProjectileInfo);
+                if (ConfigBombStacking.Value)
+                {
+                    body.statsDirty = true;
+                    //DamageInfo damageInfo = new DamageInfo();
+                    //damageInfo.damage = (float)ConfigMaxHealthPerStack.Value;
+                    //damageInfo.damageType = DamageType.Silent;
+                    //body.healthComponent.TakeDamage(damageInfo);
+                }
+            }
+            #endregion
 
             #region Handle Transforming
             transformTimer += Time.fixedDeltaTime;
-            if (!(transformTimer > 60f))
+            double calcTimer = Math.Min(
+                ConfigTransformTime.Value * Math.Pow(ConfigTransformTimeDiminishing.Value, configuredStackSize)
+                + configuredStackSize * ConfigTransformTimePerStack.Value
+                , ConfigTransformTimeMax.Value);
+            if (!(transformTimer > calcTimer))
             {
                 goto EndTransformHandling;
             }
@@ -274,7 +321,26 @@ namespace MegalomaniaPlugin
                 // And then drop EGOCENTRISM in front of the player.
 
                 Log.Info($"Player pressed F2. Spawning items at coordinates {transform.position}");
+                //ego
                 PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.LunarSun.itemIndex), transform.position, transform.forward * 20f);
+                //white scrap
+                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(RoR2Content.Items.ScrapWhite.itemIndex), transform.position, transform.forward * 20f);
+                //green scrap
+                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(RoR2Content.Items.ScrapGreen.itemIndex), transform.position, transform.forward * 20f);
+                //red scrap
+                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(RoR2Content.Items.ScrapRed.itemIndex), transform.position, transform.forward * 20f);
+                //yellow scrap
+                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(RoR2Content.Items.ScrapYellow.itemIndex), transform.position, transform.forward * 20f);
+                //beads of fealty (lunar)
+                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(RoR2Content.Items.LunarTrinket.itemIndex), transform.position, transform.forward * 20f);
+                //safer spaces (void white)
+                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.BearVoid.itemIndex), transform.position, transform.forward * 20f);
+                //plasma shrimp (void green)
+                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.MissileVoid.itemIndex), transform.position, transform.forward * 20f);
+                //pluripotent larva (void red)
+                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.ExtraLifeVoid.itemIndex), transform.position, transform.forward * 20f);
+                //newly hatched zoea (void yellow)
+                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.VoidMegaCrabItem.itemIndex), transform.position, transform.forward * 20f);
             }
         }
     }
