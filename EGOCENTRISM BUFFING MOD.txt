@@ -111,3 +111,33 @@ Rarity Priority List:
 	= A priority of 0 blacklists that tier from Egocentrism
 	= If a rarity is not listed here, its weight will be defaulted to 0, and thus cannot be converted by Egocentrism
 	= Higher numbers means Egocentrism is more conditioned to select that tier of item
+
+
+
+FOR-FUNS:
+
+(bool)  Mithrix Dialogue: false
+	= If true, will put relevant Mithrix dialogue in chat based on what you're doing. Likely on a cooldown to prevent spam. eg:
+		"YOURNAME: Pray." when entering a new stage (ignores cooldown)
+		"YOURNAME: Your body will shatter." when dealing damage (chance based, damage % based)
+		"YOURNAME: DIE, VERMIN." when dealing damage (chance based, damage % based, below half health)
+		"YOURNAME: Return to dirt." when killing (chance-based, target cannot be mechanical)
+		"YOURNAME: Inferior construct. Broken." when killing (chance-based, target must be mechanical)
+		"YOURNAME: AS I THOUGHT..." when killing (chance-based, below half health)
+		"YOURNAME: YOU CANNOT DEFY ME, GUARDIAN." when killing Aurelionite (ignores cooldown)
+		"YOURNAME: NO... NOT NOW..." when killed (ignores cooldown)
+
+(bool)  False Son Dialogue: false
+	= If Mithrix Dialogue is also true, it'll flip a coin to determine which one to use
+	= If true, will put relevant False Son dialogue in chat based on what you're doing. Likely on a cooldown to prevent spam. eg:
+		"YOURNAME: Leave me." when entering a new stage (ignores cooldown)
+		"YOURNAME: Pointless." when dealing damage (chance based, damage % based)
+		"YOURNAME: WHO WILL SHATTER FIRST?" when dealing damage (chance based, damage % based, below half health)
+		"YOURNAME: As it should be." when killing (chance-based, target cannot be mechanical)
+		"YOURNAME: Removing pest..." when killing (chance-based, target must be mechanical)
+		"YOURNAME: It is MY RIGHT." when killing (chance-based, below half health)
+		"YOURNAME: RETURN YOUR STOLEN POWER, VERMIN" when Aurelionite is spawned as an enemy (ignores cooldown)
+		"YOURNAME: Rest. Soon we will all be free." when an allied Aurelionite dies (ignores cooldown)
+		"YOURNAME: Only the storm will remember you." when an enemy dies to something other than a player (chance based)
+		"YOURNAME: This cannot be... my end." when killed (ignores cooldown)
+		"YOURNAME: THE VOICES... I can hear... me?" when killed with an allied Aurelionite present (ignores cooldown)
