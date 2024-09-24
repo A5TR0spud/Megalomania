@@ -54,6 +54,9 @@ Config Options:
 (float) Conversion Timer Maximum: 120
 	= Set to a negative number for unlimited max time
 
+(bool) Soulbind: false
+	= If true, taking damage damages nearby allies for the same amount total, and you don't take any of it.
+
 Conversion Type: EGOCENTRISM
 	EGOCENTRISM
 		-items are converted to egocentrism

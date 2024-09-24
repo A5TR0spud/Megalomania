@@ -54,6 +54,15 @@ namespace MegalomaniaPlugin
         private static ConfigEntry<double> ConfigMovementSpeedBonusCap { get; set; }
         #endregion
 
+        #region bomb toggles
+        private static ConfigEntry<bool> ConfigEnableBombs { get; set; }
+        //private static ConfigEntry<bool> ConfigBombStacking { get; set; }
+        //private static ConfigEntry<bool> ConfigNewPrimary { get; set; }
+        private static ConfigEntry<bool> ConfigPassiveBombAttack { get; set; }
+        //private static ConfigEntry<bool> ConfigActiveBombAttack { get; set; }
+        //private static ConfigEntry<bool> ConfigOnHitBombAttack { get; set; }
+        #endregion
+
         #endregion
 
 
@@ -92,7 +101,7 @@ namespace MegalomaniaPlugin
                 "If false, attack speed will stack linearly and cap at the bonus cap.");
             ConfigAttackSpeedPerStack = Config.Bind("Stats - Offensive", "Stacking Attack Speed", 0.028,
                 "A percentage used to determine how much attack speed is given per item stack.");
-            ConfigAttackSpeedBonusCap = Config.Bind("Stats - Offensive", "Bonus Attack Speed Cap", 9.0,
+            ConfigAttackSpeedBonusCap = Config.Bind("Stats - Offensive", "Bonus Attack Speed Cap", -1.0,
                 "A percentage used to determine the maximum attack speed boost from Egocentrism stacking.\n" +
                 "In linear mode, set cap to a negative value to disable the cap.\n" +
                 "In any mode, set cap to 0 to disable attack speed bonus entirely.");
@@ -102,10 +111,20 @@ namespace MegalomaniaPlugin
                 "If false, movement speed will stack linearly and cap at the bonus cap.");
             ConfigMovementSpeedPerStack = Config.Bind("Stats - Movement Speed", "Stacking Movement Speed", 0.028,
                 "A percentage used to determine how much speed is given per item stack.");
-            ConfigMovementSpeedBonusCap = Config.Bind("Stats - Movement Speed", "Bonus Movement Speed Cap", -1.0,
+            ConfigMovementSpeedBonusCap = Config.Bind("Stats - Movement Speed", "Bonus Movement Speed Cap", 9.0,
                 "A percentage used to determine the maximum speed boost from Egocentrism stacking.\n" +
                 "In linear mode, set cap to a negative value to disable the cap.\n" +
                 "In any mode, set cap to 0 to disable speed bonus entirely.");
+
+            //BOMBS
+            //Toggles
+            ConfigEnableBombs = Config.Bind("Bombs - Toggles", "Enable Bomb Generation", true,
+                "Should bombs be generated over time at all?");
+           // ConfigBombStacking = Config.Bind("Bombs - Toggles", "Bomb Stacking", false,
+            //   "If true, the amount of bombs currently orbiting the player is used instead of the amount of Egocentrism, for stacking calculations.");
+            ConfigPassiveBombAttack = Config.Bind("Bombs - Toggles", "Passive Bomb Attack", true,
+                "Whether the vanilla seeking behavior should apply.");
+
 
             ConfigCleanup();
         }
@@ -183,30 +202,37 @@ namespace MegalomaniaPlugin
             Xoroshiro128Plus transformRng = self.GetFieldValue<Xoroshiro128Plus>("transformRng");
             projectileTimer += Time.fixedDeltaTime;
 
-            if (!body.master.IsDeployableLimited(DeployableSlot.LunarSunBomb) && projectileTimer > 3f / (float)stack)
-            {
-                projectileTimer = 0f;
-                FireProjectileInfo fireProjectileInfo = default(FireProjectileInfo);
-                fireProjectileInfo.projectilePrefab = projectilePrefab;
-                fireProjectileInfo.crit = body.RollCrit();
-                fireProjectileInfo.damage = body.damage * 3.6f;
-                fireProjectileInfo.damageColorIndex = DamageColorIndex.Item;
-                fireProjectileInfo.force = 0f;
-                fireProjectileInfo.owner = base.gameObject;
-                fireProjectileInfo.position = body.transform.position;
-                fireProjectileInfo.rotation = Quaternion.identity;
-                FireProjectileInfo fireProjectileInfo2 = fireProjectileInfo;
-                ProjectileManager.instance.FireProjectile(fireProjectileInfo2);
-            }
+            #region Handle Bombs
+            if (!ConfigEnableBombs.Value)
+                goto EndBombHandling;
+            if (body.master.IsDeployableLimited(DeployableSlot.LunarSunBomb))
+                goto EndBombHandling;
+            if (projectileTimer <= 3f / (float)stack)
+                goto EndBombHandling;
+            projectileTimer = 0f;
+            FireProjectileInfo fireProjectileInfo = default(FireProjectileInfo);
+            fireProjectileInfo.projectilePrefab = projectilePrefab;
+            fireProjectileInfo.crit = body.RollCrit();
+            fireProjectileInfo.damage = body.damage * 3.6f;
+            fireProjectileInfo.damageColorIndex = DamageColorIndex.Item;
+            fireProjectileInfo.force = 0f;
+            fireProjectileInfo.owner = body.gameObject;
+            fireProjectileInfo.position = body.transform.position;
+            fireProjectileInfo.rotation = Quaternion.identity;
+            ProjectileManager.instance.FireProjectile(fireProjectileInfo);
+        #endregion
+            EndBombHandling:;
+
+            #region Handle Transforming
             transformTimer += Time.fixedDeltaTime;
-            if (!(transformTimer > 1f))
+            if (!(transformTimer > 60f))
             {
-                return;
+                goto EndTransformHandling;
             }
             transformTimer = 0f;
             if (!body.master || !body.inventory)
             {
-                return;
+                goto EndTransformHandling;
             }
             List<ItemIndex> list = new List<ItemIndex>(body.inventory.itemAcquisitionOrder);
             ItemIndex itemIndex = ItemIndex.None;
@@ -229,6 +255,8 @@ namespace MegalomaniaPlugin
                 body.inventory.GiveItem(DLC1Content.Items.LunarSun);
                 CharacterMasterNotificationQueue.SendTransformNotification(body.master, itemIndex, DLC1Content.Items.LunarSun.itemIndex, CharacterMasterNotificationQueue.TransformationType.LunarSun);
             }
+            #endregion
+            EndTransformHandling:;
 
             self.SetFieldValue("projectileTimer", projectileTimer);
             self.SetFieldValue("transformTimer", transformTimer);
