@@ -65,15 +65,33 @@ namespace MegalomaniaPlugin
         //private static ConfigEntry<bool> ConfigOnHitBombAttack { get; set; }
         #endregion
 
-        #region conversion
+        #region bomb stats
+        private static ConfigEntry<double> ConfigBombCreationRate { get; set; }
+        private static ConfigEntry<double> ConfigBombCreationStackingMultiplier { get; set; }
+        private static ConfigEntry<double> ConfigBombCreationStackingAdder { get; set; }
+        private static ConfigEntry<double> ConfigBombDamage { get; set; }
+        private static ConfigEntry<double> ConfigBombStackingDamage {  get; set; }
+        private static ConfigEntry<int> ConfigBombCap { get; set; }
+        private static ConfigEntry<double> ConfigBombStackingCap { get; set; }
+        private static ConfigEntry<double> ConfigBombRange { get; set; }
+        private static ConfigEntry<double> ConfigBombStackingRange { get; set; }
+
+        #endregion
+
+        #region transform time
         private static ConfigEntry<double> ConfigTransformTime { get; set; }
         private static ConfigEntry<double> ConfigTransformTimePerStack { get; set; }
         private static ConfigEntry<double> ConfigTransformTimeDiminishing { get; set; }
         private static ConfigEntry<double> ConfigTransformTimeMax {  get; set; }
+        private static ConfigEntry<int> ConfigTransformMaxPerStage { get; set; }
+        private static ConfigEntry<double> ConfigTransformMaxPerStageStacking { get; set; }
         #endregion
 
         #endregion
 
+        #region Items
+        private static ItemDef transformToken;
+        #endregion
 
         // The Awake() method is run at the very start when the game is initialized.
         public void Awake()
@@ -81,11 +99,41 @@ namespace MegalomaniaPlugin
             Log.Init(Logger);
             CreateConfig();
 
+            HookLunarSunStats();
+
+            if (ConfigCompatibilityMode.Value)
+                return;
+
+            InitItems();
+
             //Override Egocentrism code, haha. Sorry mate.
             On.RoR2.LunarSunBehavior.FixedUpdate += LunarSunBehavior_FixedUpdate;
+            On.RoR2.LunarSunBehavior.GetMaxProjectiles += LunarSunBehavior_GetMaxProjectiles;
+            On.RoR2.CharacterMaster.OnServerStageBegin += CharacterMaster_OnServerStageBegin;
+        }
 
-            if (!ConfigCompatibilityMode.Value)
-                HookLunarSunStats();
+        private void InitItems()
+        {
+            transformToken = ScriptableObject.CreateInstance<ItemDef>();
+
+            // Language Tokens, explained there https://risk-of-thunder.github.io/R2Wiki/Mod-Creation/Assets/Localization/
+            transformToken.name = "MEGALOMANIA_TOKEN_NAME";
+            transformToken.nameToken = "MEGALOMANIA_TOKEN_NAME";
+            transformToken.pickupToken = "MEGALOMANIA_TOKEN_PICKUP";
+            transformToken.descriptionToken = "MEGALOMANIA_TOKEN_DESC";
+            transformToken.loreToken = "MEGALOMANIA_TOKEN_LORE";
+
+#pragma warning disable CS0618 // Type or member is obsolete
+            transformToken.deprecatedTier = ItemTier.NoTier;
+#pragma warning restore CS0618 // Type or member is obsolete
+
+            transformToken.canRemove = false;
+            transformToken.hidden = true;
+
+            var displayRules = new ItemDisplayRuleDict(null);
+
+            // Then finally add it to R2API
+            ItemAPI.Add(new CustomItem(transformToken, displayRules));
         }
 
         private void CreateConfig()
@@ -140,18 +188,45 @@ namespace MegalomaniaPlugin
                "If true, the amount of bombs currently orbiting the player is used instead of the amount of Egocentrism, for stacking calculations.");
             ConfigPassiveBombAttack = Config.Bind("4. Bombs - Toggles", "Passive Bomb Attack", true,
                 "Whether the vanilla seeking behavior should apply.");
+            //Stats
+            ConfigBombCreationRate = Config.Bind("5. Bombs - Toggles", "Initial Bomb Creation Rate", 3.0,
+                "How many seconds it takes to generate a bomb at stack size 1.");
+            ConfigBombCreationStackingMultiplier = Config.Bind("5. Bombs - Toggles", "Bomb Creation Stacking Multiplier", 1.0,
+                "Scales the rate at which additional stacks decrease cooldown.\n" +
+                "Lower values require more Egocentrism to reduce the cooldown by the same amount.\n" +
+                "For example, 0.5 would require 2x as many stacks to reduce the time by the same amount.");
+            ConfigBombCreationStackingAdder = Config.Bind("5. Bombs - Toggles", "Bomb Creation Stacking Adder", 0.0,
+                "Time to add to bomb creation rate per stack. Can be negative.");
+            ConfigBombDamage = Config.Bind("5. Bombs - Toggles", "Initial Bomb Damage", 2.0,
+                "A percentage of damage the bombs should do at stack size 1. Vanilla is 3.6 (360%).");
+            ConfigBombStackingDamage = Config.Bind("5. Bombs - Toggles", "Stacking Bomb Damage", 0.1,
+                "How much damage to add to each bomb per stack.");
+            ConfigBombCap = Config.Bind("5. Bombs - Toggles", "Initial Bomb Cap", 3,
+                "How many bombs can be generated at stack size 1.");
+            ConfigBombStackingCap = Config.Bind("5. Bombs - Toggles", "Stacking Bomb Cap", 1.0,
+                "How many bombs to add to the bomb cap per stack.");
+            ConfigBombRange = Config.Bind("5. Bombs - Toggles", "Bomb Range", 15.0,
+                "The distance in meters at which bombs can target enemies.");
+            ConfigBombStackingRange = Config.Bind("5. Bombs - Toggles", "Stacking Bomb Range", 1.0,
+                "The distance in meters to add to bomb range per stack.");
 
             //TRANSFORMING
             //Time
             ConfigTransformTime = Config.Bind("5. Transform - Time", "Default Transform Timer", 60.0,
                 "The time it takes for Egocentrism to transform another item");
             ConfigTransformTimePerStack = Config.Bind("5. Transform - Time", "Flat Time Per Stack", 0.0,
-                "Added to transform timer to increase wait time when positive and decrease when negative.");
+                "Time to add to transform timer per stack. Can be negative.");
             ConfigTransformTimeDiminishing = Config.Bind("5. Transform - Time", "Multiplier Per Stack", 0.9,
                 "Every stack multiplies the transform timer by this value.");
             ConfigTransformTimeMax = Config.Bind("5. Transform - Time", "Max Time", 120.0,
                 "The maximum time Egocentrism can take before transforming an item.\n" +
                 "Anything less than 1/60th of a second is forced back up to 1/60th of a second.");
+            ConfigTransformMaxPerStage = Config.Bind("5. Transform - Time", "Max Transforms Per Stage", 3,
+                "Caps how many transformations can happen per stage.\n" +
+                "Set negative to disable.");
+            ConfigTransformMaxPerStageStacking = Config.Bind("5. Transform - Time", "Max Transforms Per Stage Per Stack", 0.5,
+                "How many transformations to add to the cap per stack.\n" +
+                "Warning: 1 or more will effectively remove the cap.");
 
 
             ConfigCleanup();
@@ -239,16 +314,39 @@ namespace MegalomaniaPlugin
             if (ConfigBombStacking.Value)
                 configuredStackSize = body.master.GetDeployableCount(DeployableSlot.LunarSunBomb);
 
-            #region Handle Bombs
+            handleBombs(ref body, ref projectileTimer, stack, projectilePrefab);
+
+            handleTrans(ref body, ref transformTimer, stack, configuredStackSize, transformRng);
+
+            self.SetFieldValue("projectileTimer", projectileTimer);
+            self.SetFieldValue("transformTimer", transformTimer);
+        }
+
+        private int LunarSunBehavior_GetMaxProjectiles(On.RoR2.LunarSunBehavior.orig_GetMaxProjectiles orig, Inventory inventory)
+        {
+            return (int)(ConfigBombCap.Value + (inventory.GetItemCount(DLC1Content.Items.LunarSun) - 1) * ConfigBombStackingCap.Value);
+        }
+
+        private void handleBombs(ref CharacterBody body, ref float projectileTimer, int stack, GameObject projectilePrefab)
+        {
+            float denominator = (float)(stack - 1) * (float)ConfigBombCreationStackingMultiplier.Value + 1;
             if (ConfigEnableBombs.Value &&
                 !body.master.IsDeployableLimited(DeployableSlot.LunarSunBomb) &&
-                projectileTimer > 3f / (float)stack)
+                projectileTimer > ConfigBombCreationRate.Value / denominator + ConfigBombCreationStackingAdder.Value * stack)
             {
                 projectileTimer = 0f;
+
+                ProjectileSphereTargetFinder targetFinder = projectilePrefab.GetComponent<ProjectileSphereTargetFinder>();
+                if (targetFinder)
+                    targetFinder.lookRange = (float) (ConfigBombRange.Value + (ConfigBombStackingRange.Value * (stack - 1)));
+                else
+                    Log.Error("LunarSunBehavior: Unable to modify projectile Range (ProjectileSphereTargetFinder component not found)");
+                //Thank you ConfigEgocentrism by Judgy53 for the range code snippet above
+
                 FireProjectileInfo fireProjectileInfo = default(FireProjectileInfo);
                 fireProjectileInfo.projectilePrefab = projectilePrefab;
                 fireProjectileInfo.crit = body.RollCrit();
-                fireProjectileInfo.damage = body.damage * 3.6f;
+                fireProjectileInfo.damage = body.damage * (float)(ConfigBombDamage.Value + ConfigBombStackingDamage.Value * stack);
                 fireProjectileInfo.damageColorIndex = DamageColorIndex.Item;
                 fireProjectileInfo.force = 0f;
                 fireProjectileInfo.owner = body.gameObject;
@@ -264,9 +362,11 @@ namespace MegalomaniaPlugin
                     //body.healthComponent.TakeDamage(damageInfo);
                 }
             }
-            #endregion
+        }
 
-            #region Handle Transforming
+        private void handleTrans(ref CharacterBody body, ref float transformTimer, int stack, int configuredStackSize, Xoroshiro128Plus transformRng)
+        {
+            //with acceptance
             transformTimer += Time.fixedDeltaTime;
             double calcTimer = Math.Min(
                 ConfigTransformTime.Value * Math.Pow(ConfigTransformTimeDiminishing.Value, configuredStackSize)
@@ -274,13 +374,19 @@ namespace MegalomaniaPlugin
                 , ConfigTransformTimeMax.Value);
             if (!(transformTimer > calcTimer))
             {
-                goto EndTransformHandling;
+                return;
             }
             transformTimer = 0f;
             if (!body.master || !body.inventory)
             {
-                goto EndTransformHandling;
+                return;
             }
+            if (ConfigTransformMaxPerStage.Value > 0
+                && body.inventory.GetItemCount(transformToken.itemIndex) >= ConfigTransformMaxPerStage.Value + (stack - 1) * ConfigTransformMaxPerStageStacking.Value)
+            {
+                return;
+            }
+
             List<ItemIndex> list = new List<ItemIndex>(body.inventory.itemAcquisitionOrder);
             ItemIndex itemIndex = ItemIndex.None;
             Util.ShuffleList(list, transformRng);
@@ -300,13 +406,27 @@ namespace MegalomaniaPlugin
             {
                 body.inventory.RemoveItem(itemIndex);
                 body.inventory.GiveItem(DLC1Content.Items.LunarSun);
+                if (ConfigTransformMaxPerStage.Value > 0)
+                    body.inventory.GiveItem(transformToken);
                 CharacterMasterNotificationQueue.SendTransformNotification(body.master, itemIndex, DLC1Content.Items.LunarSun.itemIndex, CharacterMasterNotificationQueue.TransformationType.LunarSun);
             }
-            #endregion
-            EndTransformHandling:;
+        }
 
-            self.SetFieldValue("projectileTimer", projectileTimer);
-            self.SetFieldValue("transformTimer", transformTimer);
+        [Server]
+        private void CharacterMaster_OnServerStageBegin(On.RoR2.CharacterMaster.orig_OnServerStageBegin orig, CharacterMaster self, Stage stage)
+        {
+            if (!NetworkServer.active)
+            {
+                Log.Warning("[Server] function 'System.Void RoR2.CharacterMaster::OnServerStageBegin(RoR2.Stage)' called on client");
+                return;
+            }
+
+            Inventory inventory = self.inventory;
+            int itemCount = inventory.GetItemCount(transformToken);
+            if (itemCount > 0)
+            {
+                inventory.RemoveItem(DLC1Content.Items.RegeneratingScrapConsumed, itemCount);
+            }
         }
 
         // The Update() method is run on every frame of the game.
