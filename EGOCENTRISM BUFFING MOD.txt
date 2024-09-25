@@ -126,7 +126,7 @@ Item Priority List:
 	white scrap: 10,
 	green scrap: 15,
 	yellow scrap: 5,
-	red scrap: -1,
+	red scrap: 1,
 	regenerating scrap: -10
 	= Added to rarity priority for that specific item
 
