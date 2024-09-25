@@ -84,7 +84,7 @@ namespace MegalomaniaPlugin
         private static ConfigEntry<double> ConfigTransformTimeDiminishing { get; set; }
         private static ConfigEntry<double> ConfigTransformTimeMax {  get; set; }
         private static ConfigEntry<int> ConfigTransformMaxPerStage { get; set; }
-        private static ConfigEntry<double> ConfigTransformMaxPerStageStacking { get; set; }
+        private static ConfigEntry<int> ConfigTransformMaxPerStageStacking { get; set; }
         #endregion
 
         #endregion
@@ -185,7 +185,7 @@ namespace MegalomaniaPlugin
             ConfigEnableBombs = Config.Bind("4. Bombs - Toggles", "Enable Bomb Generation", true,
                 "Should bombs be generated over time at all?");
             ConfigBombStacking = Config.Bind("4. Bombs - Toggles", "Bomb Stacking", false,
-               "If true, the amount of bombs currently orbiting the player is used instead of the amount of Egocentrism, for stacking calculations.");
+               "If true, the amount of bombs currently orbiting the player is used instead of the amount of Egocentrism, for stacking calculations of player stats.");
             ConfigPassiveBombAttack = Config.Bind("4. Bombs - Toggles", "Passive Bomb Attack", true,
                 "Whether the vanilla seeking behavior should apply.");
             //Stats
@@ -206,14 +206,16 @@ namespace MegalomaniaPlugin
             ConfigBombStackingCap = Config.Bind("5. Bombs - Toggles", "Stacking Bomb Cap", 1.0,
                 "How many bombs to add to the bomb cap per stack.");
             ConfigBombRange = Config.Bind("5. Bombs - Toggles", "Bomb Range", 15.0,
-                "The distance in meters at which bombs can target enemies.");
+                "The distance at which bombs can target enemies.");
             ConfigBombStackingRange = Config.Bind("5. Bombs - Toggles", "Stacking Bomb Range", 1.0,
-                "The distance in meters to add to bomb range per stack.");
+                "The distance to add to bomb range per stack.");
 
             //TRANSFORMING
             //Time
-            ConfigTransformTime = Config.Bind("5. Transform - Time", "Default Transform Timer", 60.0,
-                "The time it takes for Egocentrism to transform another item");
+            ConfigTransformTime = Config.Bind("5. Transform - Time", "Default Transform Timer", 0.0,
+                "The time it takes for Egocentrism to transform another item.\n" +
+                "If this is set to 0, behavior is overriden to happen on entering a new stage instead of over time, like Benthic Bloom.\n" +
+                "Minimum allowed value is 1/60th of a second.");
             ConfigTransformTimePerStack = Config.Bind("5. Transform - Time", "Flat Time Per Stack", 0.0,
                 "Time to add to transform timer per stack. Can be negative.");
             ConfigTransformTimeDiminishing = Config.Bind("5. Transform - Time", "Multiplier Per Stack", 0.9,
@@ -221,12 +223,12 @@ namespace MegalomaniaPlugin
             ConfigTransformTimeMax = Config.Bind("5. Transform - Time", "Max Time", 120.0,
                 "The maximum time Egocentrism can take before transforming an item.\n" +
                 "Anything less than 1/60th of a second is forced back up to 1/60th of a second.");
-            ConfigTransformMaxPerStage = Config.Bind("5. Transform - Time", "Max Transforms Per Stage", 3,
+            ConfigTransformMaxPerStage = Config.Bind("5. Transform - Time", "Max Transforms Per Stage", 5,
                 "Caps how many transformations can happen per stage.\n" +
-                "Set negative to disable.");
-            ConfigTransformMaxPerStageStacking = Config.Bind("5. Transform - Time", "Max Transforms Per Stage Per Stack", 0.5,
+                "Set negative to disable cap, unless time is 0.");
+            ConfigTransformMaxPerStageStacking = Config.Bind("5. Transform - Time", "Max Transforms Per Stage Per Stack", 0,
                 "How many transformations to add to the cap per stack.\n" +
-                "Warning: 1 or more will effectively remove the cap.");
+                "The system is intelligent and won't count stacks added by conversion from the current stage.");
 
 
             ConfigCleanup();
@@ -310,13 +312,10 @@ namespace MegalomaniaPlugin
             Xoroshiro128Plus transformRng = self.GetFieldValue<Xoroshiro128Plus>("transformRng");
             projectileTimer += Time.fixedDeltaTime;
 
-            int configuredStackSize = stack;
-            if (ConfigBombStacking.Value)
-                configuredStackSize = body.master.GetDeployableCount(DeployableSlot.LunarSunBomb);
+            handleBombs(body, ref projectileTimer, stack, projectilePrefab);
 
-            handleBombs(ref body, ref projectileTimer, stack, projectilePrefab);
-
-            handleTrans(ref body, ref transformTimer, stack, configuredStackSize, transformRng);
+            if (ConfigTransformTime.Value > 0)
+                handleTransUpdate(body, ref transformTimer, stack, transformRng);
 
             self.SetFieldValue("projectileTimer", projectileTimer);
             self.SetFieldValue("transformTimer", transformTimer);
@@ -327,7 +326,7 @@ namespace MegalomaniaPlugin
             return (int)(ConfigBombCap.Value + (inventory.GetItemCount(DLC1Content.Items.LunarSun) - 1) * ConfigBombStackingCap.Value);
         }
 
-        private void handleBombs(ref CharacterBody body, ref float projectileTimer, int stack, GameObject projectilePrefab)
+        private void handleBombs(CharacterBody body, ref float projectileTimer, int stack, GameObject projectilePrefab)
         {
             float denominator = (float)(stack - 1) * (float)ConfigBombCreationStackingMultiplier.Value + 1;
             if (ConfigEnableBombs.Value &&
@@ -364,13 +363,13 @@ namespace MegalomaniaPlugin
             }
         }
 
-        private void handleTrans(ref CharacterBody body, ref float transformTimer, int stack, int configuredStackSize, Xoroshiro128Plus transformRng)
+        private void handleTransUpdate(CharacterBody body, ref float transformTimer, int stack, Xoroshiro128Plus transformRng)
         {
             //with acceptance
             transformTimer += Time.fixedDeltaTime;
             double calcTimer = Math.Min(
-                ConfigTransformTime.Value * Math.Pow(ConfigTransformTimeDiminishing.Value, configuredStackSize)
-                + configuredStackSize * ConfigTransformTimePerStack.Value
+                ConfigTransformTime.Value * Math.Pow(ConfigTransformTimeDiminishing.Value, stack)
+                + stack * ConfigTransformTimePerStack.Value
                 , ConfigTransformTimeMax.Value);
             if (!(transformTimer > calcTimer))
             {
@@ -387,45 +386,89 @@ namespace MegalomaniaPlugin
                 return;
             }
 
-            List<ItemIndex> list = new List<ItemIndex>(body.inventory.itemAcquisitionOrder);
-            ItemIndex itemIndex = ItemIndex.None;
-            Util.ShuffleList(list, transformRng);
-            foreach (ItemIndex item in list)
+            TransformItems(body.inventory, 1, transformRng, body.master);
+        }
+
+        private void TransformItems(Inventory inventory, int amount, Xoroshiro128Plus transformRng, CharacterMaster master)
+        {
+            if (!NetworkServer.active)
             {
-                if (item != DLC1Content.Items.LunarSun.itemIndex)
-                {
-                    ItemDef itemDef = ItemCatalog.GetItemDef(item);
-                    if ((bool)itemDef && itemDef.tier != ItemTier.NoTier)
-                    {
-                        itemIndex = item;
-                        break;
-                    }
-                }
+                Log.Warning("[Server] function 'TransformItems' called on client");
+                return;
             }
-            if (itemIndex != ItemIndex.None)
+
+            if (!inventory || !master)
+                return;
+
+            if (amount <= 0)
+                return;
+
+            if (transformRng == null)
             {
-                body.inventory.RemoveItem(itemIndex);
-                body.inventory.GiveItem(DLC1Content.Items.LunarSun);
+                transformRng = new Xoroshiro128Plus(Run.instance.seed);
+            }
+
+            List<ItemIndex> list = new List<ItemIndex>(inventory.itemAcquisitionOrder);
+            Util.ShuffleList(list, transformRng);
+
+            int i = 0;
+            int items = list.Count;
+            if (items <= 0)
+                return;
+
+            while (amount > 0 && i < items)
+            {
+                ItemIndex itemIndex = list[i];
+                if (itemIndex == DLC1Content.Items.LunarSun.itemIndex)
+                {
+                    goto DiscardItem;
+                }
+                ItemDef itemDef = ItemCatalog.GetItemDef(itemIndex);
+                if (!(bool)itemDef)
+                {
+                    goto DiscardItem;
+                }
+                if (itemDef.tier == ItemTier.NoTier)
+                {
+                    goto DiscardItem;
+                }
+                //tranform item
+                inventory.RemoveItem(itemIndex);
+                inventory.GiveItem(DLC1Content.Items.LunarSun);
                 if (ConfigTransformMaxPerStage.Value > 0)
-                    body.inventory.GiveItem(transformToken);
-                CharacterMasterNotificationQueue.SendTransformNotification(body.master, itemIndex, DLC1Content.Items.LunarSun.itemIndex, CharacterMasterNotificationQueue.TransformationType.LunarSun);
+                    inventory.GiveItem(transformToken, 1 + ConfigTransformMaxPerStageStacking.Value);
+                CharacterMasterNotificationQueue.SendTransformNotification(master, itemIndex, DLC1Content.Items.LunarSun.itemIndex, CharacterMasterNotificationQueue.TransformationType.LunarSun);
+                amount--;
+                //continue
+
+                DiscardItem:
+                i++;
             }
         }
 
         [Server]
         private void CharacterMaster_OnServerStageBegin(On.RoR2.CharacterMaster.orig_OnServerStageBegin orig, CharacterMaster self, Stage stage)
         {
-            if (!NetworkServer.active)
+            orig(self, stage);
+
+            Inventory inventory = self.inventory;
+
+            if (!inventory)
             {
-                Log.Warning("[Server] function 'System.Void RoR2.CharacterMaster::OnServerStageBegin(RoR2.Stage)' called on client");
                 return;
             }
 
-            Inventory inventory = self.inventory;
-            int itemCount = inventory.GetItemCount(transformToken);
-            if (itemCount > 0)
+            int egoCount = inventory.GetItemCount(DLC1Content.Items.LunarSun);
+            if (ConfigTransformTime.Value == 0 && egoCount > 0)
             {
-                inventory.RemoveItem(DLC1Content.Items.RegeneratingScrapConsumed, itemCount);
+                int amount = ConfigTransformMaxPerStage.Value + (egoCount - 1) * ConfigTransformMaxPerStageStacking.Value;
+                TransformItems(inventory, amount, null, self);
+            }
+
+            int tokenCount = inventory.GetItemCount(transformToken);
+            if (tokenCount > 0)
+            {
+                inventory.RemoveItem(transformToken, tokenCount);
             }
         }
 
@@ -452,7 +495,7 @@ namespace MegalomaniaPlugin
                 //yellow scrap
                 PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(RoR2Content.Items.ScrapYellow.itemIndex), transform.position, transform.forward * 20f);
                 //beads of fealty (lunar)
-                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(RoR2Content.Items.LunarTrinket.itemIndex), transform.position, transform.forward * 20f);
+                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(RoR2Content.Items.FocusConvergence.itemIndex), transform.position, transform.forward * 20f);
                 //safer spaces (void white)
                 PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.BearVoid.itemIndex), transform.position, transform.forward * 20f);
                 //plasma shrimp (void green)
@@ -460,7 +503,11 @@ namespace MegalomaniaPlugin
                 //pluripotent larva (void red)
                 PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.ExtraLifeVoid.itemIndex), transform.position, transform.forward * 20f);
                 //newly hatched zoea (void yellow)
-                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.VoidMegaCrabItem.itemIndex), transform.position, transform.forward * 20f);
+                //PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.VoidMegaCrabItem.itemIndex), transform.position, transform.forward * 20f);
+                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.CloverVoid.itemIndex), transform.position, transform.forward * 20f);
+                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC2Content.Items.LowerPricedChestsConsumed.itemIndex), transform.position, transform.forward * 20f);
+                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.RegeneratingScrapConsumed.itemIndex), transform.position, transform.forward * 20f);
+
             }
         }
     }

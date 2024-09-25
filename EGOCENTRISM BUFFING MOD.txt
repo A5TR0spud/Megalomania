@@ -54,8 +54,11 @@ Config Options:
 (float) Conversion Timer Maximum: 120
 	= Set to a negative number for unlimited max time
 
-(bool) Soulbind: false
+(bool)  Soulbind: false
 	= If true, damage taken be Egocentrism holders is split between all nearby allies.
+
+(bool)  Regenerating Ego: false
+	= If true, then regenerating scrap that gets absorbed into Egocentrism is consumed instead of destroyed
 
 Conversion Type: EGOCENTRISM
 	EGOCENTRISM
@@ -102,19 +105,30 @@ Rarity Priority Tiebreaker: ORDER
 		-selects the tier that appears furthest up the list
 
 Rarity Priority List:
-	voidyellow:5,
-	voidred:4,
-	red:4,
-	yellow:3,
-	voidgreen:2,
-	green:2,
-	voidwhite:1,
-	white:1,
+	voidyellow:50,
+	voidred:40,
+	red:40,
+	yellow:30,
+	voidgreen:20,
+	green:20,
+	voidwhite:10,
+	white:10,
 	lunar:0
 	= A priority of 0 blacklists that tier from Egocentrism
 	= If a rarity is not listed here, its weight will be defaulted to 0, and thus cannot be converted by Egocentrism
 	= Higher numbers means Egocentrism is more conditioned to select that tier of item
 
+Item Priority List:
+	beetle gland: 1,
+	empathy cores: 6,
+	defense nucleus: 3,
+	spare drone parts: 5,
+	white scrap: 10,
+	green scrap: 15,
+	yellow scrap: 5,
+	red scrap: -1,
+	regenerating scrap: -10
+	= Added to rarity priority for that specific item
 
 
 FOR-FUNS:
