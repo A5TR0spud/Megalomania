@@ -1,3 +1,5 @@
+This .txt file indicates my plans, not everything currently in the mod
+
 EGOCENTRISM BUFFING MOD:
 Default values are not indicative of default vanilla values.
 Default values:
