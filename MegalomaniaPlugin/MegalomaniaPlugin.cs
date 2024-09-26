@@ -139,7 +139,7 @@ namespace MegalomaniaPlugin
             
             foreach (string rP in rarityPriority)
             {
-                string[] Rapier = ConfigRarityPriorityList.Value.Split(":");
+                string[] Rapier = rP.Split(":");
                 //if there's an incorrect amount of colons, skip
                 if (Rapier.Length != 2)
                 {
@@ -175,6 +175,7 @@ namespace MegalomaniaPlugin
                     continue;
                 }
                 parsedRarityPriorityList.Add(rarity, priority);
+                Log.Info($"Rarity:Priority added! `{Rapier}`");
             }
         }
 
