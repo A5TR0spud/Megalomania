@@ -693,7 +693,7 @@ namespace MegalomaniaPlugin
         }
 
         // The Update() method is run on every frame of the game.
-        private void Update()
+        /*private void Update()
         {
             // This if statement checks if the player has currently pressed F2.
             if (Input.GetKeyDown(KeyCode.F2))
@@ -719,6 +719,6 @@ namespace MegalomaniaPlugin
                 player.inventory.GiveItem(DLC1Content.Items.RegeneratingScrapConsumed.itemIndex);
                 player.inventory.GiveItem(DLC2Content.Items.LowerPricedChestsConsumed.itemIndex);
             }
-        }
+        }*/
     }
 }
