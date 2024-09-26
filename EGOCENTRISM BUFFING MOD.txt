@@ -129,6 +129,7 @@ Item Priority List:
 	red scrap: 1,
 	regenerating scrap: -10
 	= Added to rarity priority for that specific item
+	= If you explicitly write an item and then follow it up with a priority of 0, that item will be blacklisted
 
 
 FOR-FUNS:

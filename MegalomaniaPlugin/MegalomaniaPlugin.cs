@@ -111,6 +111,9 @@ namespace MegalomaniaPlugin
         //Parsed Rarity:Priority List
         private Dictionary<ItemTier, int> parsedRarityPriorityList;
 
+        //ItemCatalog.FindItemIndex(itemString)
+        //Use above line of code to parse strings from config into items, when item priorities are added
+
         // The Awake() method is run at the very start when the game is initialized.
         public void Awake()
         {
@@ -151,31 +154,31 @@ namespace MegalomaniaPlugin
                 //if either side of the colon is blank, skip
                 if (tierString.IsNullOrWhiteSpace() || priorityString.IsNullOrWhiteSpace())
                 {
-                    Log.Warning($"Invalid empty tier or priority: `{Rapier}`");
+                    Log.Warning($"Invalid empty tier or priority: `{Rapier.ToString()}`");
                     continue;
                 }
                 int priority;
                 //if the priority is not an integer, skip
                 if (!int.TryParse(priorityString, out priority))
                 {
-                    Log.Warning($"Invalid priority: `{Rapier}`");
+                    Log.Warning($"Invalid priority: `{Rapier.ToString()}`");
                     continue;
                 }
                 //if the rarity is undefined, skip
                 if (!Enum.TryParse(tierString, out Utils.ItemTierLookup tier))
                 {
-                    Log.Warning($"Invalid rarity: `{Rapier}`");
+                    Log.Warning($"Invalid rarity: `{Rapier.ToString()}`");
                     continue;
                 }
                 ItemTier rarity = (ItemTier)tier;
                 //if the rarity is already in the list, skip
                 if (parsedRarityPriorityList.ContainsKey(rarity))
                 {
-                    Log.Warning($"Rarity already in list: `{Rapier}`");
+                    Log.Warning($"Rarity already in list: `{Rapier.ToString()}`");
                     continue;
                 }
                 parsedRarityPriorityList.Add(rarity, priority);
-                Log.Info($"Rarity:Priority added! `{Rapier}`");
+                Log.Info($"Rarity:Priority added! `{Rapier.ToString()}`");
             }
         }
 
@@ -487,16 +490,14 @@ namespace MegalomaniaPlugin
             }
 
             List<ItemIndex> list = new List<ItemIndex>(inventory.itemAcquisitionOrder);
-            Util.ShuffleList(list, transformRng);
+            //Util.ShuffleList(list, transformRng);
 
             int i = 0;
             int items = list.Count;
             if (items <= 0)
                 return;
 
-            ItemTier prefferedTier = rollRandomWeightedTier(transformRng);
-            List<ItemIndex> acceptableItems = new List<ItemIndex>();
-
+            Dictionary<ItemIndex, int> acceptableItems = new Dictionary<ItemIndex, int>();
             while (amount > 0 && i < items)
             {
                 ItemIndex itemIndex = list[i];
@@ -517,59 +518,60 @@ namespace MegalomaniaPlugin
                     goto DiscardItem;
                 }
                 //don't convert blacklisted tiers
-                if (!parsedRarityPriorityList.TryGetValue(itemDef.tier, out int v) || v == 0)
+                int weight = 0;
+                if (!parsedRarityPriorityList.TryGetValue(itemDef.tier, out weight) || weight == 0)
                 {
                     goto DiscardItem;
                 }
 
                 //allow item transform
-                if (itemDef.tier == prefferedTier)
-                {
-                    acceptableItems.Prepend(itemIndex);
-                }
-                else
-                {
-                    acceptableItems.Add(itemIndex);
-                }
+                acceptableItems.Add(itemIndex, weight);
+                //amount--;
                 //continue
 
                 DiscardItem:
                 i++;
             }
 
-            foreach (ItemIndex itemIndex in acceptableItems)
+            while (amount > 0)
             {
-                //tranform item
-                inventory.RemoveItem(itemIndex);
+                //tranform weighted random item
+                ItemIndex itemToTransform = getRandomWeightedDictKey(acceptableItems, transformRng);
+                inventory.RemoveItem(itemToTransform);
                 inventory.GiveItem(DLC1Content.Items.LunarSun);
                 if (ConfigTransformMaxPerStage.Value > 0)
                     inventory.GiveItem(transformToken, 1 + ConfigTransformMaxPerStageStacking.Value);
-                CharacterMasterNotificationQueue.SendTransformNotification(master, itemIndex, DLC1Content.Items.LunarSun.itemIndex, CharacterMasterNotificationQueue.TransformationType.LunarSun);
+                CharacterMasterNotificationQueue.SendTransformNotification(master, itemToTransform, DLC1Content.Items.LunarSun.itemIndex, CharacterMasterNotificationQueue.TransformationType.LunarSun);
+                
+                if (inventory.GetItemCount(itemToTransform) <= 0)
+                {
+                    acceptableItems.Remove(itemToTransform);
+                }
+                
+                amount--;
             }
         }
 
-        private ItemTier rollRandomWeightedTier(Xoroshiro128Plus transformRng)
+        private static T getRandomWeightedDictKey<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
         {
-            List<ItemTier> rolledList = new List<ItemTier>();
-            foreach (var item in parsedRarityPriorityList)
+            int totalWeight = 0;
+            foreach (var weight in dict.Values)
             {
-                if (item.Value == 0)
-                {
-                    continue;
-                }
+                totalWeight += weight;
+            }
 
-                for (int i = 0; i < item.Value; i++)
+            int randomNumber = rng.RangeInt(0, totalWeight);
+            foreach (var kvp in dict)
+            {
+                randomNumber -= kvp.Value;
+                if (randomNumber < 0)
                 {
-                    rolledList.Add(item.Key);
+                    return kvp.Key;
                 }
             }
 
-            if (rolledList.Count == 0)
-            {
-                return ItemTier.NoTier;
-            }
-
-            return rolledList[transformRng.RangeInt(0, rolledList.Count)];
+            Log.Error("Couldn't return a random weighted dictionary key! This shouldn't happen if all weights are positive. Returned FirstOrDefault() instead.");
+            return dict.FirstOrDefault().Key;
         }
 
         [Server]
@@ -604,36 +606,26 @@ namespace MegalomaniaPlugin
             // This if statement checks if the player has currently pressed F2.
             if (Input.GetKeyDown(KeyCode.F2))
             {
+                CharacterMaster player = PlayerCharacterMasterController.instances[0].master;
                 // Get the player body to use a position:
-                var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
+                var transform = player.GetBodyObject().transform;
 
                 // And then drop EGOCENTRISM in front of the player.
 
                 Log.Info($"Player pressed F2. Spawning items at coordinates {transform.position}");
                 //ego
                 PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.LunarSun.itemIndex), transform.position, transform.forward * 20f);
-                //white scrap
-                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(RoR2Content.Items.ScrapWhite.itemIndex), transform.position, transform.forward * 20f);
-                //green scrap
-                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(RoR2Content.Items.ScrapGreen.itemIndex), transform.position, transform.forward * 20f);
-                //red scrap
-                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(RoR2Content.Items.ScrapRed.itemIndex), transform.position, transform.forward * 20f);
-                //yellow scrap
-                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(RoR2Content.Items.ScrapYellow.itemIndex), transform.position, transform.forward * 20f);
-                //beads of fealty (lunar)
-                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(RoR2Content.Items.FocusConvergence.itemIndex), transform.position, transform.forward * 20f);
-                //safer spaces (void white)
-                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.BearVoid.itemIndex), transform.position, transform.forward * 20f);
-                //plasma shrimp (void green)
-                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.MissileVoid.itemIndex), transform.position, transform.forward * 20f);
-                //pluripotent larva (void red)
-                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.ExtraLifeVoid.itemIndex), transform.position, transform.forward * 20f);
-                //newly hatched zoea (void yellow)
-                //PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.VoidMegaCrabItem.itemIndex), transform.position, transform.forward * 20f);
-                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.CloverVoid.itemIndex), transform.position, transform.forward * 20f);
-                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC2Content.Items.LowerPricedChestsConsumed.itemIndex), transform.position, transform.forward * 20f);
-                PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.RegeneratingScrapConsumed.itemIndex), transform.position, transform.forward * 20f);
-
+                player.inventory.GiveItem(RoR2Content.Items.ScrapWhite.itemIndex);
+                player.inventory.GiveItem(RoR2Content.Items.ScrapGreen.itemIndex);
+                player.inventory.GiveItem(RoR2Content.Items.ScrapRed.itemIndex);
+                player.inventory.GiveItem(RoR2Content.Items.ScrapYellow.itemIndex);
+                player.inventory.GiveItem(RoR2Content.Items.FocusConvergence.itemIndex);
+                player.inventory.GiveItem(DLC1Content.Items.BearVoid.itemIndex);
+                player.inventory.GiveItem(DLC1Content.Items.MissileVoid.itemIndex);
+                player.inventory.GiveItem(DLC1Content.Items.ExtraLifeVoid.itemIndex);
+                player.inventory.GiveItem(DLC1Content.Items.CloverVoid.itemIndex);
+                player.inventory.GiveItem(DLC1Content.Items.RegeneratingScrapConsumed.itemIndex);
+                player.inventory.GiveItem(DLC2Content.Items.LowerPricedChestsConsumed.itemIndex);
             }
         }
     }
