@@ -122,7 +122,7 @@ namespace MegalomaniaPlugin
             CreateConfig();
             ParseRarityPriorityList();
             //parse item priority list after items have loaded
-            On.RoR2.ItemCatalog.DefineItems += ItemCatalog_DefineItems;
+            On.RoR2.ItemCatalog.SetItemDefs += ItemCatalog_SetItemDefs;
 
             HookLunarSunStats();
 
@@ -138,9 +138,9 @@ namespace MegalomaniaPlugin
             On.RoR2.CharacterMaster.OnServerStageBegin += CharacterMaster_OnServerStageBegin;
         }
 
-        private void ItemCatalog_DefineItems(On.RoR2.ItemCatalog.orig_DefineItems orig)
+        private void ItemCatalog_SetItemDefs(On.RoR2.ItemCatalog.orig_SetItemDefs orig, ItemDef[] newItemDefs)
         {
-            orig();
+            orig(newItemDefs);
             ParseItemPriorityList();
         }
 
@@ -156,7 +156,7 @@ namespace MegalomaniaPlugin
                 //if there's an incorrect amount of colons, skip
                 if (Rapier.Length != 2)
                 {
-                    Log.Warning($"Invalid amount of colons: `{Rapier.ToString()}`");
+                    Log.Warning($"Invalid amount of colons: `{rP}`");
                     continue;
                 }
                 string tierString = Rapier[0].Trim().ToLower();
@@ -164,37 +164,37 @@ namespace MegalomaniaPlugin
                 //if either side of the colon is blank, skip
                 if (tierString.IsNullOrWhiteSpace() || priorityString.IsNullOrWhiteSpace())
                 {
-                    Log.Warning($"Invalid empty tier or priority: `{Rapier.ToString()}`");
+                    Log.Warning($"Invalid empty tier or priority: `{rP}`");
                     continue;
                 }
                 int priority;
                 //if the priority is not an integer, skip
                 if (!int.TryParse(priorityString, out priority) || priority < 0)
                 {
-                    Log.Warning($"Invalid priority: `{Rapier.ToString()}`");
+                    Log.Warning($"Invalid priority: `{rP}`");
                     continue;
                 }
                 //if the priority is 0, skip
                 if (priority == 0)
                 {
-                    Log.Info($"Blacklisting Rarity:Priority '{Rapier.ToString()}'");
+                    Log.Info($"Blacklisting Rarity:Priority '{rP}'");
                     continue;
                 }
                 //if the rarity is undefined, skip
                 if (!Enum.TryParse(tierString, out Utils.ItemTierLookup tier))
                 {
-                    Log.Warning($"Invalid rarity: `{Rapier.ToString()}`");
+                    Log.Warning($"Invalid rarity: `{rP}`");
                     continue;
                 }
                 ItemTier rarity = (ItemTier)tier;
                 //if the rarity is already in the list, skip
                 if (parsedRarityPriorityList.ContainsKey(rarity))
                 {
-                    Log.Warning($"Rarity already in list: `{Rapier.ToString()}`");
+                    Log.Warning($"Rarity already in list: `{rP}`");
                     continue;
                 }
                 parsedRarityPriorityList.Add(rarity, priority);
-                Log.Info($"Rarity:Priority added! `{Rapier.ToString()}`");
+                Log.Info($"Rarity:Priority added! `{rP}`");
             }
         }
 
@@ -210,7 +210,7 @@ namespace MegalomaniaPlugin
                 //if there's an incorrect amount of colons, skip
                 if (ItePrio.Length != 2)
                 {
-                    Log.Warning($"Invalid amount of colons: `{ItePrio.ToString()}`");
+                    Log.Warning($"Invalid amount of colons: `{iP}`");
                     continue;
                 }
                 string indexString = ItePrio[0].Trim();
@@ -218,31 +218,31 @@ namespace MegalomaniaPlugin
                 //if either side of the colon is blank, skip
                 if (indexString.IsNullOrWhiteSpace() || priorityString.IsNullOrWhiteSpace())
                 {
-                    Log.Warning($"Invalid empty item or priority: `{ItePrio.ToString()}`");
+                    Log.Warning($"Invalid empty item or priority: `{iP}`");
                     continue;
                 }
                 int priority;
                 //if the priority is not an integer, skip
                 if (!int.TryParse(priorityString, out priority))
                 {
-                    Log.Warning($"Invalid priority: `{ItePrio.ToString()}`");
+                    Log.Warning($"Invalid priority: `{iP}`");
                     continue;
                 }
                 //if the item is undefined, skip
                 ItemIndex index = ItemCatalog.FindItemIndex(indexString);
                 if (index == ItemIndex.None)
                 {
-                    Log.Warning($"Invalid item: `{ItePrio.ToString()}`");
+                    Log.Warning($"Invalid item: `{iP}`");
                     continue;
                 }
                 //if the rarity is already in the list, skip
                 if (parsedItemPriorityList.ContainsKey(index))
                 {
-                    Log.Warning($"Item already in list: `{ItePrio.ToString()}`");
+                    Log.Warning($"Item already in list: `{iP}`");
                     continue;
                 }
                 parsedItemPriorityList.Add(index, priority);
-                Log.Info($"Item:Priority added! `{ItePrio.ToString()}`");
+                Log.Info($"Item:Priority added! `{iP}`");
             }
         }
 
@@ -592,15 +592,15 @@ namespace MegalomaniaPlugin
                 {
                     goto DiscardItem;
                 }
-                //don't convert blacklisted tiers
+                //get tier weight
                 int weight = 0;
-                if (!parsedRarityPriorityList.TryGetValue(itemDef.tier, out weight) || weight == 0)
+                if (!parsedRarityPriorityList.TryGetValue(itemDef.tier, out weight))
                 {
-                    goto DiscardItem;
+                    weight = 0;
                 }
                 //don't convert blacklisted items
                 int itemWeight = 1;
-                if (!parsedItemPriorityList.TryGetValue(itemIndex, out itemWeight) || itemWeight == 0)
+                if (parsedItemPriorityList.TryGetValue(itemIndex, out itemWeight) && itemWeight == 0)
                 {
                     goto DiscardItem;
                 }
