@@ -1,6 +1,9 @@
 # Megalomania
 
 
+Not entirely tested. Contact me on discord @A5TR0spud.
+Github repo: https://github.com/A5TR0spud/Megalomania/tree/master
+
 By default:
 Egocentrism increases health, regeneration, armor, damage, crit chance, attack speed, movement speed.
 Egocentrism bombs start at 200% damage instead of 360% but increase in damage by 10% per stack.

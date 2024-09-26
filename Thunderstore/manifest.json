@@ -3,6 +3,7 @@
 	"version_number": "0.1.0",
 	"website_url": "https://github.com/A5TR0spud/Megalomania/tree/master",
 	"description": "Buff Egocentrism with stats and rules. Configurable.",
+	"author": "A5TR0spud",
 	"dependencies": [
 		"bbepis-BepInExPack-5.4.2108",
 		"RiskofThunder-HookGenPatcher-1.2.3",
