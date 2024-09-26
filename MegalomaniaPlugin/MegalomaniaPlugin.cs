@@ -323,25 +323,25 @@ namespace MegalomaniaPlugin
             ConfigPassiveBombAttack = Config.Bind("4. Bombs - Toggles", "Passive Bomb Attack", true,
                 "Whether the vanilla seeking behavior should apply.");
             //Stats
-            ConfigBombCreationRate = Config.Bind("5. Bombs - Toggles", "Initial Bomb Creation Rate", 3.0,
+            ConfigBombCreationRate = Config.Bind("5. Bombs - Stats", "Initial Bomb Creation Rate", 3.0,
                 "How many seconds it takes to generate a bomb at stack size 1.");
-            ConfigBombCreationStackingMultiplier = Config.Bind("5. Bombs - Toggles", "Bomb Creation Stacking Multiplier", 1.0,
+            ConfigBombCreationStackingMultiplier = Config.Bind("5. Bombs - Stats", "Bomb Creation Stacking Multiplier", 1.0,
                 "Scales the rate at which additional stacks decrease cooldown.\n" +
                 "Lower values require more Egocentrism to reduce the cooldown by the same amount.\n" +
                 "For example, 0.5 would require 2x as many stacks to reduce the time by the same amount.");
-            ConfigBombCreationStackingAdder = Config.Bind("5. Bombs - Toggles", "Bomb Creation Stacking Adder", 0.0,
+            ConfigBombCreationStackingAdder = Config.Bind("5. Bombs - Stats", "Bomb Creation Stacking Adder", 0.0,
                 "Time to add to bomb creation rate per stack. Can be negative.");
-            ConfigBombDamage = Config.Bind("5. Bombs - Toggles", "Initial Bomb Damage", 2.0,
+            ConfigBombDamage = Config.Bind("5. Bombs - Stats", "Initial Bomb Damage", 2.0,
                 "A percentage of damage the bombs should do at stack size 1. Vanilla is 3.6 (360%).");
-            ConfigBombStackingDamage = Config.Bind("5. Bombs - Toggles", "Stacking Bomb Damage", 0.1,
+            ConfigBombStackingDamage = Config.Bind("5. Bombs - Stats", "Stacking Bomb Damage", 0.1,
                 "How much damage to add to each bomb per stack.");
-            ConfigBombCap = Config.Bind("5. Bombs - Toggles", "Initial Bomb Cap", 3,
+            ConfigBombCap = Config.Bind("5. Bombs - Stats", "Initial Bomb Cap", 3,
                 "How many bombs can be generated at stack size 1.");
-            ConfigBombStackingCap = Config.Bind("5. Bombs - Toggles", "Stacking Bomb Cap", 1.0,
+            ConfigBombStackingCap = Config.Bind("5. Bombs - Stats", "Stacking Bomb Cap", 1.0,
                 "How many bombs to add to the bomb cap per stack.");
-            ConfigBombRange = Config.Bind("5. Bombs - Toggles", "Bomb Range", 15.0,
+            ConfigBombRange = Config.Bind("5. Bombs - Stats", "Bomb Range", 15.0,
                 "The distance at which bombs can target enemies.");
-            ConfigBombStackingRange = Config.Bind("5. Bombs - Toggles", "Stacking Bomb Range", 1.0,
+            ConfigBombStackingRange = Config.Bind("5. Bombs - Stats", "Stacking Bomb Range", 1.0,
                 "The distance to add to bomb range per stack.");
 
             //TRANSFORMING
