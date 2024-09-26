@@ -494,7 +494,12 @@ namespace MegalomaniaPlugin
 
                 ProjectileSphereTargetFinder targetFinder = projectilePrefab.GetComponent<ProjectileSphereTargetFinder>();
                 if (targetFinder)
-                    targetFinder.lookRange = (float) (ConfigBombRange.Value + (ConfigBombStackingRange.Value * (stack - 1)));
+                {
+                    if (ConfigPassiveBombAttack.Value)
+                        targetFinder.lookRange = (float)(ConfigBombRange.Value + (ConfigBombStackingRange.Value * (stack - 1)));
+                    else
+                        targetFinder.lookRange = 0;
+                }
                 else
                     Log.Error("LunarSunBehavior: Unable to modify projectile Range (ProjectileSphereTargetFinder component not found)");
 
