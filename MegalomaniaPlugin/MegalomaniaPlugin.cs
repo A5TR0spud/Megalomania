@@ -378,7 +378,7 @@ namespace MegalomaniaPlugin
             ConfigItemPriorityList = Config.Bind("6. Transform - Rules", "Item:Priority List",
                 "BeetleGland:5, GhostOnKill:5, MinorConstructOnKill:5, RoboBallBuddy:10, ScrapGreen:15, ScrapWhite:10, ScrapYellow:5, ScrapRed:1, RegeneratingScrap:-10, ExtraStatsOnLevelUp:20, FreeChest:-19, ExtraShrineItem:10, CloverVoid:-15, LowerPricedChests:-19, ResetChests:-5",
                 "A priority of 0 blacklists that item from Egocentrism.\n" +
-                "Can be negative. If negative is of a greater magnitude than the rarity, the item is blacklisted." +
+                "Can be negative. If negative is of a greater magnitude than the rarity, the item is blacklisted.\n" +
                 "If a rarity that an item is part of is blacklisted but the item shows up in this list with a positive value, that item won't be blacklisted.\n" +
                 "If a rarity is not listed here, its priority is determined exclusively by its tier.\n" +
                 "Higher numbers means Egocentrism is more conditioned to select that item.\n" +
