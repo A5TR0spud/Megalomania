@@ -7,10 +7,21 @@ using RoR2.Projectile;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.Diagnostics;
 using UnityEngine.Networking;
+
+//MIT License
+
+//This is my first RoR2 mod (that I've written code for) and basically my first C# project
+
+//Thank you ConfigEgocentrism by Judgy53 for code reference:
+//https://github.com/Judgy53/ConfigEgocentrism/blob/main/ConfigEgocentrism/ConfigEgocentrismPlugin.cs
+
+//The github for this one is
+//https://github.com/A5TR0spud/Megalomania/tree/master
 
 namespace MegalomaniaPlugin
 {
@@ -87,17 +98,25 @@ namespace MegalomaniaPlugin
         private static ConfigEntry<int> ConfigTransformMaxPerStageStacking { get; set; }
         #endregion
 
+        #region transform rules
+        private static ConfigEntry<string> ConfigRarityPriorityList {  get; set; }
+        #endregion
+
         #endregion
 
         #region Items
         private static ItemDef transformToken;
         #endregion
 
+        //Parsed Rarity:Priority List
+        private Dictionary<ItemTier, int> parsedRarityPriorityList;
+
         // The Awake() method is run at the very start when the game is initialized.
         public void Awake()
         {
             Log.Init(Logger);
             CreateConfig();
+            ParseRarityPriorityList();
 
             HookLunarSunStats();
 
@@ -110,6 +129,53 @@ namespace MegalomaniaPlugin
             On.RoR2.LunarSunBehavior.FixedUpdate += LunarSunBehavior_FixedUpdate;
             On.RoR2.LunarSunBehavior.GetMaxProjectiles += LunarSunBehavior_GetMaxProjectiles;
             On.RoR2.CharacterMaster.OnServerStageBegin += CharacterMaster_OnServerStageBegin;
+        }
+
+        private void ParseRarityPriorityList()
+        {
+            parsedRarityPriorityList = new Dictionary<ItemTier, int>();
+
+            string[] rarityPriority = ConfigRarityPriorityList.Value.Split(',');
+            
+            foreach (string rP in rarityPriority)
+            {
+                string[] Rapier = ConfigRarityPriorityList.Value.Split(":");
+                //if there's an incorrect amount of colons, skip
+                if (Rapier.Length != 2)
+                {
+                    Log.Warning($"Invalid amount of colons: `{Rapier}`");
+                    continue;
+                }
+                string tierString = Rapier[0].Trim().ToLower();
+                string priorityString = Rapier[1].Trim();
+                //if either side of the colon is blank, skip
+                if (tierString.IsNullOrWhiteSpace() || priorityString.IsNullOrWhiteSpace())
+                {
+                    Log.Warning($"Invalid empty tier or priority: `{Rapier}`");
+                    continue;
+                }
+                int priority;
+                //if the priority is not an integer, skip
+                if (!int.TryParse(priorityString, out priority))
+                {
+                    Log.Warning($"Invalid priority: `{Rapier}`");
+                    continue;
+                }
+                //if the rarity is undefined, skip
+                if (!Enum.TryParse(tierString, out Utils.ItemTierLookup tier))
+                {
+                    Log.Warning($"Invalid rarity: `{Rapier}`");
+                    continue;
+                }
+                ItemTier rarity = (ItemTier)tier;
+                //if the rarity is already in the list, skip
+                if (parsedRarityPriorityList.ContainsKey(rarity))
+                {
+                    Log.Warning($"Rarity already in list: `{Rapier}`");
+                    continue;
+                }
+                parsedRarityPriorityList.Add(rarity, priority);
+            }
         }
 
         private void InitItems()
@@ -212,23 +278,35 @@ namespace MegalomaniaPlugin
 
             //TRANSFORMING
             //Time
-            ConfigTransformTime = Config.Bind("5. Transform - Time", "Default Transform Timer", 0.0,
+            ConfigTransformTime = Config.Bind("5. Transform - When to Transform", "Default Transform Timer", 0.0,
                 "The time it takes for Egocentrism to transform another item.\n" +
                 "If this is set to 0, behavior is overriden to happen on entering a new stage instead of over time, like Benthic Bloom.\n" +
                 "Minimum allowed value is 1/60th of a second.");
-            ConfigTransformTimePerStack = Config.Bind("5. Transform - Time", "Flat Time Per Stack", 0.0,
-                "Time to add to transform timer per stack. Can be negative.");
-            ConfigTransformTimeDiminishing = Config.Bind("5. Transform - Time", "Multiplier Per Stack", 0.9,
+            ConfigTransformTimePerStack = Config.Bind("5. Transform - When to Transform", "Flat Time Per Stack", 0.0,
+                "Time to add to transform timer per stack. Can be negative.\n" +
+                "Ignored if Default Transform Timer is 0");
+            ConfigTransformTimeDiminishing = Config.Bind("5. Transform - When to Transform", "Multiplier Per Stack", 0.9,
                 "Every stack multiplies the transform timer by this value.");
-            ConfigTransformTimeMax = Config.Bind("5. Transform - Time", "Max Time", 120.0,
+            ConfigTransformTimeMax = Config.Bind("5. Transform - When to Transform", "Max Time", 120.0,
                 "The maximum time Egocentrism can take before transforming an item.\n" +
                 "Anything less than 1/60th of a second is forced back up to 1/60th of a second.");
-            ConfigTransformMaxPerStage = Config.Bind("5. Transform - Time", "Max Transforms Per Stage", 5,
+            ConfigTransformMaxPerStage = Config.Bind("5. Transform - When to Transform", "Max Transforms Per Stage", 5,
                 "Caps how many transformations can happen per stage.\n" +
-                "Set negative to disable cap, unless time is 0.");
-            ConfigTransformMaxPerStageStacking = Config.Bind("5. Transform - Time", "Max Transforms Per Stage Per Stack", 0,
+                "Set negative to disable cap, unless Default Transform Timer is 0.");
+            ConfigTransformMaxPerStageStacking = Config.Bind("5. Transform - When to Transform", "Max Transforms Per Stage Per Stack", 0,
                 "How many transformations to add to the cap per stack.\n" +
                 "The system is intelligent and won't count stacks added by conversion from the current stage.");
+            //Rules
+            ConfigRarityPriorityList = Config.Bind("6. Transform - Rules", "Rarity:Priority List",
+                "voidyellow:50, voidred:40, red:40, yellow:30, voidgreen:20, green:20, voidwhite:10, white:10, blue:0",
+                "A priority of 0 blacklists that tier from Egocentrism.\n" +
+                "If a rarity is not listed here, it cannot be converted by Egocentrism.\n" +
+                "Higher numbers means Egocentrism is more conditioned to select that tier of item.\n" +
+                "Format: tier1:integer, tier2:#, tier3:#, etc\n" +
+                "Case insensitive, mostly whitespace insensitive.\n" +
+                "Valid Tiers:\n" +
+                "white,green,red,blue,yellow,voidwhite,voidgreen,voidred,voidyellow,\n" +
+                "common,uncommon,legendary,lunar,boss,voidcommon,voiduncommon,voidlegendary,voidboss");
 
 
             ConfigCleanup();
@@ -340,7 +418,6 @@ namespace MegalomaniaPlugin
                     targetFinder.lookRange = (float) (ConfigBombRange.Value + (ConfigBombStackingRange.Value * (stack - 1)));
                 else
                     Log.Error("LunarSunBehavior: Unable to modify projectile Range (ProjectileSphereTargetFinder component not found)");
-                //Thank you ConfigEgocentrism by Judgy53 for the range code snippet above
 
                 FireProjectileInfo fireProjectileInfo = default(FireProjectileInfo);
                 fireProjectileInfo.projectilePrefab = projectilePrefab;
@@ -416,34 +493,82 @@ namespace MegalomaniaPlugin
             if (items <= 0)
                 return;
 
+            ItemTier prefferedTier = rollRandomWeightedTier(transformRng);
+            List<ItemIndex> acceptableItems = new List<ItemIndex>();
+
             while (amount > 0 && i < items)
             {
                 ItemIndex itemIndex = list[i];
+                //don't convert egocentrism
                 if (itemIndex == DLC1Content.Items.LunarSun.itemIndex)
                 {
                     goto DiscardItem;
                 }
+                //don't convert things that don't exist
                 ItemDef itemDef = ItemCatalog.GetItemDef(itemIndex);
                 if (!(bool)itemDef)
                 {
                     goto DiscardItem;
                 }
+                //don't convert untiered items
                 if (itemDef.tier == ItemTier.NoTier)
                 {
                     goto DiscardItem;
                 }
+                //don't convert blacklisted tiers
+                if (!parsedRarityPriorityList.TryGetValue(itemDef.tier, out int v) || v == 0)
+                {
+                    goto DiscardItem;
+                }
+
+                //allow item transform
+                if (itemDef.tier == prefferedTier)
+                {
+                    acceptableItems.Prepend(itemIndex);
+                }
+                else
+                {
+                    acceptableItems.Add(itemIndex);
+                }
+                //continue
+
+                DiscardItem:
+                i++;
+            }
+
+            foreach (ItemIndex itemIndex in acceptableItems)
+            {
                 //tranform item
                 inventory.RemoveItem(itemIndex);
                 inventory.GiveItem(DLC1Content.Items.LunarSun);
                 if (ConfigTransformMaxPerStage.Value > 0)
                     inventory.GiveItem(transformToken, 1 + ConfigTransformMaxPerStageStacking.Value);
                 CharacterMasterNotificationQueue.SendTransformNotification(master, itemIndex, DLC1Content.Items.LunarSun.itemIndex, CharacterMasterNotificationQueue.TransformationType.LunarSun);
-                amount--;
-                //continue
-
-                DiscardItem:
-                i++;
             }
+        }
+
+        private ItemTier rollRandomWeightedTier(Xoroshiro128Plus transformRng)
+        {
+            List<ItemTier> rolledList = new List<ItemTier>();
+            foreach (var item in parsedRarityPriorityList)
+            {
+                if (item.Value == 0)
+                {
+                    continue;
+                }
+
+                for (int i = 0; i < item.Value; i++)
+                {
+                    rolledList.Add(item.Key);
+                }
+            }
+
+            if (rolledList.Count == 0)
+            {
+                return ItemTier.NoTier;
+            }
+
+            return rolledList[transformRng.RangeInt(0, rolledList.Count)];
         }
 
         [Server]
