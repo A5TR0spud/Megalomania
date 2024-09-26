@@ -29,7 +29,7 @@ namespace MegalomaniaPlugin
     [BepInDependency(RecalculateStatsAPI.PluginGUID)]
 
     //https://risk-of-thunder.github.io/R2Wiki/Mod-Creation/Assets/Localization/
-    [BepInDependency(LanguageAPI.PluginGUID)]
+    //[BepInDependency(LanguageAPI.PluginGUID)]
 
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
 
@@ -40,7 +40,7 @@ namespace MegalomaniaPlugin
         public const string PluginName = "Megalomania";
         //Desc:
         // Buffs Egocentrism to give some stat boosts. Adds blacklist. Highly configurable.
-        public const string PluginVersion = "0.1.0";
+        public const string PluginVersion = "0.1.1";
 
         #region Constants and Configs
 
@@ -572,13 +572,12 @@ namespace MegalomaniaPlugin
             List<ItemIndex> list = new List<ItemIndex>(inventory.itemAcquisitionOrder);
             //Util.ShuffleList(list, transformRng);
 
-            int i = 0;
             int items = list.Count;
             if (items <= 0)
                 return;
 
             Dictionary<ItemIndex, int> acceptableItems = new Dictionary<ItemIndex, int>();
-            while (amount > 0 && i < items)
+            for (int i = 0; i < items; i++)
             {
                 ItemIndex itemIndex = list[i];
                 //don't convert egocentrism
