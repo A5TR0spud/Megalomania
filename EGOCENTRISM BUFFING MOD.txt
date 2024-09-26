@@ -130,6 +130,7 @@ Item Priority List:
 	regenerating scrap: -10
 	= Added to rarity priority for that specific item
 	= If you explicitly write an item and then follow it up with a priority of 0, that item will be blacklisted
+	= If a rarity that an item is part of is blacklisted but the item shows up in this list with a positive value, that item won't be blacklisted
 
 
 FOR-FUNS:
