@@ -100,6 +100,7 @@ namespace MegalomaniaPlugin
 
         #region transform rules
         private static ConfigEntry<string> ConfigRarityPriorityList {  get; set; }
+        private static ConfigEntry<string> ConfigItemPriorityList { get; set; }
         #endregion
 
         #endregion
@@ -111,8 +112,8 @@ namespace MegalomaniaPlugin
         //Parsed Rarity:Priority List
         private Dictionary<ItemTier, int> parsedRarityPriorityList;
 
-        //ItemCatalog.FindItemIndex(itemString)
-        //Use above line of code to parse strings from config into items, when item priorities are added
+        //Parsed Item:Priority List
+        private Dictionary<ItemIndex, int> parsedItemPriorityList;
 
         // The Awake() method is run at the very start when the game is initialized.
         public void Awake()
@@ -120,6 +121,7 @@ namespace MegalomaniaPlugin
             Log.Init(Logger);
             CreateConfig();
             ParseRarityPriorityList();
+            ParseItemPriorityList();
 
             HookLunarSunStats();
 
@@ -146,7 +148,7 @@ namespace MegalomaniaPlugin
                 //if there's an incorrect amount of colons, skip
                 if (Rapier.Length != 2)
                 {
-                    Log.Warning($"Invalid amount of colons: `{Rapier}`");
+                    Log.Warning($"Invalid amount of colons: `{Rapier.ToString()}`");
                     continue;
                 }
                 string tierString = Rapier[0].Trim().ToLower();
@@ -159,9 +161,15 @@ namespace MegalomaniaPlugin
                 }
                 int priority;
                 //if the priority is not an integer, skip
-                if (!int.TryParse(priorityString, out priority))
+                if (!int.TryParse(priorityString, out priority) || priority < 0)
                 {
                     Log.Warning($"Invalid priority: `{Rapier.ToString()}`");
+                    continue;
+                }
+                //if the priority is 0, skip
+                if (priority == 0)
+                {
+                    Log.Info($"Blacklisting Rarity:Priority '{Rapier.ToString()}'");
                     continue;
                 }
                 //if the rarity is undefined, skip
@@ -179,6 +187,54 @@ namespace MegalomaniaPlugin
                 }
                 parsedRarityPriorityList.Add(rarity, priority);
                 Log.Info($"Rarity:Priority added! `{Rapier.ToString()}`");
+            }
+        }
+
+        private void ParseItemPriorityList()
+        {
+            parsedItemPriorityList = new Dictionary<ItemIndex, int>();
+
+            string[] itemPriority = ConfigItemPriorityList.Value.Split(',');
+
+            foreach (string iP in itemPriority)
+            {
+                string[] ItePrio = iP.Split(":");
+                //if there's an incorrect amount of colons, skip
+                if (ItePrio.Length != 2)
+                {
+                    Log.Warning($"Invalid amount of colons: `{ItePrio.ToString()}`");
+                    continue;
+                }
+                string indexString = ItePrio[0].Trim();
+                string priorityString = ItePrio[1].Trim();
+                //if either side of the colon is blank, skip
+                if (indexString.IsNullOrWhiteSpace() || priorityString.IsNullOrWhiteSpace())
+                {
+                    Log.Warning($"Invalid empty item or priority: `{ItePrio.ToString()}`");
+                    continue;
+                }
+                int priority;
+                //if the priority is not an integer, skip
+                if (!int.TryParse(priorityString, out priority))
+                {
+                    Log.Warning($"Invalid priority: `{ItePrio.ToString()}`");
+                    continue;
+                }
+                //if the item is undefined, skip
+                ItemIndex index = ItemCatalog.FindItemIndex(indexString);
+                if (index == ItemIndex.None)
+                {
+                    Log.Warning($"Invalid item: `{ItePrio.ToString()}`");
+                    continue;
+                }
+                //if the rarity is already in the list, skip
+                if (parsedItemPriorityList.ContainsKey(index))
+                {
+                    Log.Warning($"Item already in list: `{ItePrio.ToString()}`");
+                    continue;
+                }
+                parsedItemPriorityList.Add(index, priority);
+                Log.Info($"Item:Priority added! `{ItePrio.ToString()}`");
             }
         }
 
@@ -303,7 +359,7 @@ namespace MegalomaniaPlugin
             //Rules
             ConfigRarityPriorityList = Config.Bind("6. Transform - Rules", "Rarity:Priority List",
                 "voidyellow:50, voidred:40, red:40, yellow:30, voidgreen:20, green:20, voidwhite:10, white:10, blue:0",
-                "A priority of 0 blacklists that tier from Egocentrism.\n" +
+                "A priority of 0 or a negative priority blacklists that tier from Egocentrism.\n" +
                 "If a rarity is not listed here, it cannot be converted by Egocentrism.\n" +
                 "Higher numbers means Egocentrism is more conditioned to select that tier of item.\n" +
                 "Format: tier1:integer, tier2:#, tier3:#, etc\n" +
@@ -311,6 +367,17 @@ namespace MegalomaniaPlugin
                 "Valid Tiers:\n" +
                 "white,green,red,blue,yellow,voidwhite,voidgreen,voidred,voidyellow,\n" +
                 "common,uncommon,legendary,lunar,boss,voidcommon,voiduncommon,voidlegendary,voidboss");
+            ConfigItemPriorityList = Config.Bind("6. Transform - Rules", "Item:Priority List",
+                "BeetleGland:5, GhostOnKill:5, MinorConstructOnKill:5, RoboBallBuddy:10, ScrapGreen:15, ScrapWhite:10, ScrapYellow:5, ScrapRed:1, RegeneratingScrap:-10, ExtraStatsOnLevelUp:20, FreeChest:-19, ExtraShrineItem:10, CloverVoid:-15, LowerPricedChests:-19, ResetChests:-5",
+                "A priority of 0 blacklists that item from Egocentrism.\n" +
+                "Can be negative. If negative is of a greater magnitude than the rarity, the item is blacklisted." +
+                "If a rarity that an item is part of is blacklisted but the item shows up in this list with a positive value, that item won't be blacklisted.\n" +
+                "If a rarity is not listed here, its priority is determined exclusively by its tier.\n" +
+                "Higher numbers means Egocentrism is more conditioned to select that item.\n" +
+                "Format: item1:integer, item2:#, item3:#, etc\n" +
+                "Case sensitive, somewhat whitespace sensitive.\n" +
+                "The diplay name might not always equal the codename of the item.\n" +
+                "For example: Wax Quail = JumpBoost. To find the name out for yourself, download the DebugToolkit mod, open the console (ctrl + alt + backtick (`)) and type in \"list_item\"");
 
 
             ConfigCleanup();
@@ -520,6 +587,18 @@ namespace MegalomaniaPlugin
                 //don't convert blacklisted tiers
                 int weight = 0;
                 if (!parsedRarityPriorityList.TryGetValue(itemDef.tier, out weight) || weight == 0)
+                {
+                    goto DiscardItem;
+                }
+                //don't convert blacklisted items
+                int itemWeight = 1;
+                if (!parsedItemPriorityList.TryGetValue(itemIndex, out itemWeight) || itemWeight == 0)
+                {
+                    goto DiscardItem;
+                }
+                weight += itemWeight;
+                //discard combination blacklisted items
+                if (weight <= 0)
                 {
                     goto DiscardItem;
                 }
