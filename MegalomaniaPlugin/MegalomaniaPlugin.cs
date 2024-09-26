@@ -121,7 +121,8 @@ namespace MegalomaniaPlugin
             Log.Init(Logger);
             CreateConfig();
             ParseRarityPriorityList();
-            ParseItemPriorityList();
+            //parse item priority list after items have loaded
+            On.RoR2.ItemCatalog.DefineItems += ItemCatalog_DefineItems;
 
             HookLunarSunStats();
 
@@ -133,7 +134,14 @@ namespace MegalomaniaPlugin
             //Override Egocentrism code, haha. Sorry mate.
             On.RoR2.LunarSunBehavior.FixedUpdate += LunarSunBehavior_FixedUpdate;
             On.RoR2.LunarSunBehavior.GetMaxProjectiles += LunarSunBehavior_GetMaxProjectiles;
+            //Helper for transform time modality (benthic and timed max)
             On.RoR2.CharacterMaster.OnServerStageBegin += CharacterMaster_OnServerStageBegin;
+        }
+
+        private void ItemCatalog_DefineItems(On.RoR2.ItemCatalog.orig_DefineItems orig)
+        {
+            orig();
+            ParseItemPriorityList();
         }
 
         private void ParseRarityPriorityList()
@@ -362,7 +370,7 @@ namespace MegalomaniaPlugin
                 "A priority of 0 or a negative priority blacklists that tier from Egocentrism.\n" +
                 "If a rarity is not listed here, it cannot be converted by Egocentrism.\n" +
                 "Higher numbers means Egocentrism is more conditioned to select that tier of item.\n" +
-                "Format: tier1:integer, tier2:#, tier3:#, etc\n" +
+                "Format: tier1:integer, tier2:int, tier3:i, etc\n" +
                 "Case insensitive, mostly whitespace insensitive.\n" +
                 "Valid Tiers:\n" +
                 "white,green,red,blue,yellow,voidwhite,voidgreen,voidred,voidyellow,\n" +
@@ -374,7 +382,7 @@ namespace MegalomaniaPlugin
                 "If a rarity that an item is part of is blacklisted but the item shows up in this list with a positive value, that item won't be blacklisted.\n" +
                 "If a rarity is not listed here, its priority is determined exclusively by its tier.\n" +
                 "Higher numbers means Egocentrism is more conditioned to select that item.\n" +
-                "Format: item1:integer, item2:#, item3:#, etc\n" +
+                "Format: item1:integer, item2:int, item3:i, etc\n" +
                 "Case sensitive, somewhat whitespace sensitive.\n" +
                 "The diplay name might not always equal the codename of the item.\n" +
                 "For example: Wax Quail = JumpBoost. To find the name out for yourself, download the DebugToolkit mod, open the console (ctrl + alt + backtick (`)) and type in \"list_item\"");
