@@ -62,6 +62,7 @@ Config Options:
 (bool)  Regenerating Ego: false
 	= If true, then regenerating scrap that gets absorbed into Egocentrism is consumed instead of destroyed
 
+//TODO CHANGE RANDOMLY LUNAR TO A WEIGHTED LIST OF ACCEPTABLE ITEMS TO TRANSFORM INTO
 Conversion Type: EGOCENTRISM
 	EGOCENTRISM
 		-items are converted to egocentrism
