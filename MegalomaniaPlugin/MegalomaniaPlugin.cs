@@ -629,24 +629,23 @@ namespace MegalomaniaPlugin
                 return;
 
             Dictionary<ItemIndex, int> acceptableItems = new Dictionary<ItemIndex, int>();
-            for (int i = 0; i < items; i++)
+            foreach (ItemIndex itemIndex in list)
             {
-                ItemIndex itemIndex = list[i];
                 //don't convert egocentrism
                 if (itemIndex == DLC1Content.Items.LunarSun.itemIndex)
                 {
-                    goto DiscardItem;
+                    continue;
                 }
                 //don't convert things that don't exist
                 ItemDef itemDef = ItemCatalog.GetItemDef(itemIndex);
                 if (!(bool)itemDef)
                 {
-                    goto DiscardItem;
+                    continue;
                 }
                 //don't convert untiered items
                 if (itemDef.tier == ItemTier.NoTier)
                 {
-                    goto DiscardItem;
+                    continue;
                 }
                 //get tier weight
                 int weight = 0;
@@ -658,22 +657,17 @@ namespace MegalomaniaPlugin
                 int itemWeight = 0;
                 if (parsedItemPriorityList.TryGetValue(itemIndex, out itemWeight) && itemWeight == 0)
                 {
-                    goto DiscardItem;
+                    continue;
                 }
                 weight += itemWeight;
                 //discard combination blacklisted items
                 if (weight <= 0)
                 {
-                    goto DiscardItem;
+                    continue;
                 }
 
                 //allow item transform
                 acceptableItems.Add(itemIndex, weight);
-                //amount--;
-                //continue
-
-                DiscardItem:
-                i++;
             }
 
             if (acceptableItems.Count <= 0)
