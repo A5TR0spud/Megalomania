@@ -655,7 +655,7 @@ namespace MegalomaniaPlugin
                     weight = 0;
                 }
                 //don't convert blacklisted items
-                int itemWeight = 1;
+                int itemWeight = 0;
                 if (parsedItemPriorityList.TryGetValue(itemIndex, out itemWeight) && itemWeight == 0)
                 {
                     goto DiscardItem;
