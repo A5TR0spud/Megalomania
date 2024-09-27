@@ -440,9 +440,9 @@ namespace MegalomaniaPlugin
                 "How many items to convert on stage start per additional stack.\n" +
                 "Rounded down after calculating.");
 
-            ConfigTransformTime = Config.Bind("5. Transform - When to Transform", "Default Transform Timer", 0.0,
+            ConfigTransformTime = Config.Bind("5. Transform - When to Transform", "Default Transform Timer", 60.0,
                 "The time it takes for Egocentrism to transform another item.\n" +
-                "If this is set to 0 or a negative number, conversion over time is disabled.\n" +
+                "If this is set a negative number, conversion over time is disabled.\n" +
                 "Minimum allowed value is 1/60th of a second.");
 
             ConfigTransformTimePerStack = Config.Bind("5. Transform - When to Transform", "Flat Time Per Stack", 0.0,
@@ -649,17 +649,16 @@ namespace MegalomaniaPlugin
         {
             //with acceptance
             //if time conversion is disabled, stop
-            if (ConfigTransformMaxPerStage.Value <= 0)
+            if (ConfigTransformTime.Value < 0)
             {
                 return;
             }
             transformTimer += Time.fixedDeltaTime;
-            double calcTimer = Math.Max(ConfigTransformTimeMin.Value,
-                Math.Min(
-                ConfigTransformTime.Value * Math.Pow(ConfigTransformTimeDiminishing.Value, stack)
-                + stack * ConfigTransformTimePerStack.Value
-                , ConfigTransformTimeMax.Value)
-                );
+            double calcTimer = ConfigTransformTime.Value * Math.Pow(ConfigTransformTimeDiminishing.Value, stack) + stack * ConfigTransformTimePerStack.Value;
+
+            calcTimer = Math.Min(calcTimer, ConfigTransformTimeMax.Value);
+            calcTimer = Math.Max(calcTimer, ConfigTransformTimeMin.Value);
+
             //if the timer's not up, stop
             if (!(transformTimer > calcTimer))
             {
@@ -695,14 +694,14 @@ namespace MegalomaniaPlugin
             if (amount < 1)
                 return;
 
-            if (transformRng == null)
-            {
-                transformRng = new Xoroshiro128Plus(Run.instance.seed);
-            }
-
             if (parsedItemConvertToList.Count < 1)
             {
                 return;
+            }
+
+            if (transformRng == null)
+            {
+                transformRng = new Xoroshiro128Plus(Run.instance.seed);
             }
 
             List<ItemIndex> inventoryItemsList = new List<ItemIndex>(inventory.itemAcquisitionOrder);
@@ -711,12 +710,22 @@ namespace MegalomaniaPlugin
             if (inventoryItemsList.Count < 1)
                 return;
 
-            //determine whether to give ego or a lunar
+            //determine what item to give
+            //note: it's possible to select an item to convert into itself with no other options. in this case it should keep looking but instead stops short.
             ItemDef toGive = DLC1Content.Items.LunarSun;
 
-            ItemIndex testItemConvertTo = getRandomWeightedDictKey(parsedItemConvertToList, transformRng);
+            ItemIndex toGiveIndex = getRandomWeightedDictKey(parsedItemConvertToList, transformRng);
 
-            if (testItemConvertTo == ItemIndex.None)
+            if (toGiveIndex == ItemIndex.None)
+            {
+                //something went wrong. this line shouldn't be reachable.
+                Log.Error("Egocentrism tried to convert an item but something went wrong. Did you mess up the list of items to convert to?\n" +
+                $"Parsed ConvertTo List: '{parsedItemConvertToList}'");
+                return;
+            }
+
+            toGive = ItemCatalog.GetItemDef(toGiveIndex);
+            if (!(bool)toGive)
             {
                 //something went wrong. this line shouldn't be reachable.
                 Log.Error("Egocentrism tried to convert an item but something went wrong. Did you mess up the list of items to convert to?\n" +
@@ -733,7 +742,7 @@ namespace MegalomaniaPlugin
                     continue;
                 }
                 //don't convert itself
-                if (itemIndex == testItemConvertTo)
+                if (itemIndex == toGiveIndex)
                 {
                     continue;
                 }
@@ -771,7 +780,7 @@ namespace MegalomaniaPlugin
                 acceptableItems.Add(itemIndex, weight);
             }
 
-            if (acceptableItems.Count <= 0)
+            if (acceptableItems.Count < 1)
             {
                 return;
             }
