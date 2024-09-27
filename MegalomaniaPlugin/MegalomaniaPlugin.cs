@@ -708,7 +708,7 @@ namespace MegalomaniaPlugin
 
                 //determine whether to give ego or a lunar
                 ItemDef toGive = DLC1Content.Items.LunarSun;
-                if (ConfigRandomLunar.Value > 0 && allowedConversions.Count > 0 && transformRng.nextNormalizedFloat <= ConfigRandomLunar.Value)
+                if (ConfigRandomLunar.Value > 0 && allowedConversions.Count > 0 && transformRng.RangeFloat(0, 1) < ConfigRandomLunar.Value)
                 {
                     toGive = ItemCatalog.GetItemDef(allowedConversions[transformRng.RangeInt(0, allowedConversions.Count)]);
                 }
