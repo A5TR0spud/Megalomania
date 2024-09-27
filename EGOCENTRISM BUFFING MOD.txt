@@ -162,3 +162,6 @@ FOR-FUNS:
 		"YOURNAME: Only the storm will remember you." when an enemy dies to something other than a player (chance based)
 		"YOURNAME: This cannot be... my end." when killed (ignores cooldown)
 		"YOURNAME: THE VOICES... I can hear... me?" when killed with an allied Aurelionite present (ignores cooldown)
+
+(bool)  V: false
+	= If true, every time Egocentrism transforms an item, the first few notes of Megalovania plays

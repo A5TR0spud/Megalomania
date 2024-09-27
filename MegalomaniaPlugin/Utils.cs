@@ -39,5 +39,11 @@ namespace MegalomaniaPlugin
             voidyellow = ItemTier.VoidBoss,
             voidboss = ItemTier.VoidBoss
         }
+
+        public enum ConversionSelectionType
+        {
+            weighted = 0,
+            priority = 1
+        }
     }
 }

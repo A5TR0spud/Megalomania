@@ -40,7 +40,7 @@ namespace MegalomaniaPlugin
         public const string PluginName = "Megalomania";
         //Desc:
         // Buffs Egocentrism to give some stat boosts. Adds blacklist. Highly configurable.
-        public const string PluginVersion = "0.1.1";
+        public const string PluginVersion = "0.2.0";
 
         #region Constants and Configs
 
@@ -99,49 +99,79 @@ namespace MegalomaniaPlugin
         #endregion
 
         #region transform rules
+        private static ConfigEntry<double> ConfigRandomLunar { get; set; }
+        private static ConfigEntry<string> ConfigConversionSelectionType {  get; set; }
         private static ConfigEntry<string> ConfigRarityPriorityList {  get; set; }
         private static ConfigEntry<string> ConfigItemPriorityList { get; set; }
         #endregion
 
         #endregion
 
+        private static ConfigEntry<bool> ConfigDebugItemSpawning { get; set; }
+
         #region Items
         private static ItemDef transformToken;
         #endregion
 
         //Parsed Rarity:Priority List
-        private Dictionary<ItemTier, int> parsedRarityPriorityList;
+        private static Dictionary<ItemTier, int> parsedRarityPriorityList;
 
         //Parsed Item:Priority List
-        private Dictionary<ItemIndex, int> parsedItemPriorityList;
+        private static Dictionary<ItemIndex, int> parsedItemPriorityList;
+
+        //Allowed conversions
+        private static List<ItemIndex> allowedConversions;
+
+        //Selection mode
+        private static Utils.ConversionSelectionType parsedConversionSelectionType;
 
         // The Awake() method is run at the very start when the game is initialized.
         public void Awake()
         {
             Log.Init(Logger);
             CreateConfig();
-            ParseRarityPriorityList();
-            //parse item priority list after items have loaded
-            On.RoR2.ItemCatalog.SetItemDefs += ItemCatalog_SetItemDefs;
-
+            
+            //Add pearl-like stats
             HookLunarSunStats();
 
+            //everything from here on out is disabled in compatibility mode
             if (ConfigCompatibilityMode.Value)
                 return;
 
             InitItems();
 
+            ParseRarityPriorityList();
+            //parse item priority list after items have loaded
+            On.RoR2.ItemCatalog.SetItemDefs += ItemCatalog_SetItemDefs;
+            ParseConversionSelectionType();
+
             //Override Egocentrism code, haha. Sorry mate.
             On.RoR2.LunarSunBehavior.FixedUpdate += LunarSunBehavior_FixedUpdate;
             On.RoR2.LunarSunBehavior.GetMaxProjectiles += LunarSunBehavior_GetMaxProjectiles;
             //Helper for transform time modality (benthic and timed max)
+            //Clears counter for timed max, and does the conversion for benthic
             On.RoR2.CharacterMaster.OnServerStageBegin += CharacterMaster_OnServerStageBegin;
+        }
+
+        private void ParseConversionSelectionType()
+        {
+            string toTest = ConfigConversionSelectionType.Value.Trim().ToLower();
+            if (Enum.TryParse(toTest, out Utils.ConversionSelectionType conversionType))
+            {
+                parsedConversionSelectionType = conversionType;
+                return;
+            }
+
+            Log.Warning($"Invalid conversion selection type: `{toTest}`. Defaulting to weighted.");
+            parsedConversionSelectionType = Utils.ConversionSelectionType.weighted;
+            return;
         }
 
         private void ItemCatalog_SetItemDefs(On.RoR2.ItemCatalog.orig_SetItemDefs orig, ItemDef[] newItemDefs)
         {
             orig(newItemDefs);
             ParseItemPriorityList();
+            allowedConversions = ItemCatalog.lunarItemList;
         }
 
         private void ParseRarityPriorityList()
@@ -278,6 +308,7 @@ namespace MegalomaniaPlugin
                "Other features, including stats (eg. max health), will still work.\n" +
                "Changing requires a restart.");
 
+            #region Stats
             // STATS
             //Defense
             ConfigMaxHealthPerStack = Config.Bind("1. Stats - Defensive", "Stacking Max Health", 5.0,
@@ -313,7 +344,9 @@ namespace MegalomaniaPlugin
                 "A percentage used to determine the maximum speed boost from Egocentrism stacking.\n" +
                 "In linear mode, set cap to a negative value to disable the cap.\n" +
                 "In any mode, set cap to 0 to disable speed bonus entirely.");
+            #endregion
 
+            #region Bombs
             //BOMBS
             //Toggles
             ConfigEnableBombs = Config.Bind("4. Bombs - Toggles", "Enable Bomb Generation", true,
@@ -321,14 +354,14 @@ namespace MegalomaniaPlugin
             ConfigBombStacking = Config.Bind("4. Bombs - Toggles", "Bomb Stacking", false,
                "If true, the amount of bombs currently orbiting the player is used instead of the amount of Egocentrism, for stacking calculations of player stats.");
             ConfigPassiveBombAttack = Config.Bind("4. Bombs - Toggles", "Passive Bomb Attack", true,
-                "Whether the vanilla seeking behavior should apply.");
+                "Whether the vanilla seeking behavior should apply. If a bomb collides with an enemy, it might still explode.");
             //Stats
             ConfigBombCreationRate = Config.Bind("5. Bombs - Stats", "Initial Bomb Creation Rate", 3.0,
                 "How many seconds it takes to generate a bomb at stack size 1.");
-            ConfigBombCreationStackingMultiplier = Config.Bind("5. Bombs - Stats", "Bomb Creation Stacking Multiplier", 1.0,
+            ConfigBombCreationStackingMultiplier = Config.Bind("5. Bombs - Stats", "Bomb Creation Stacking Multiplier", 0.5,
                 "Scales the rate at which additional stacks decrease cooldown.\n" +
                 "Lower values require more Egocentrism to reduce the cooldown by the same amount.\n" +
-                "For example, 0.5 would require 2x as many stacks to reduce the time by the same amount.");
+                "For example, 0.5 requires 2x as many stacks as 1 would to reduce the time by the same amount.");
             ConfigBombCreationStackingAdder = Config.Bind("5. Bombs - Stats", "Bomb Creation Stacking Adder", 0.0,
                 "Time to add to bomb creation rate per stack. Can be negative.");
             ConfigBombDamage = Config.Bind("5. Bombs - Stats", "Initial Bomb Damage", 2.0,
@@ -343,7 +376,9 @@ namespace MegalomaniaPlugin
                 "The distance at which bombs can target enemies.");
             ConfigBombStackingRange = Config.Bind("5. Bombs - Stats", "Stacking Bomb Range", 1.0,
                 "The distance to add to bomb range per stack.");
+            #endregion
 
+            #region Transform
             //TRANSFORMING
             //Time
             ConfigTransformTime = Config.Bind("5. Transform - When to Transform", "Default Transform Timer", 0.0,
@@ -365,8 +400,19 @@ namespace MegalomaniaPlugin
                 "How many transformations to add to the cap per stack.\n" +
                 "The system is intelligent and won't count stacks added by conversion from the current stage.");
             //Rules
+            ConfigRandomLunar = Config.Bind("6. Transform - Rules", "Randomly Lunar", 0.0,
+                "A chance determining whether converting yields Egocentrism or a random lunar item. Eg:\n" +
+                "A value of 0.0 means every conversion results in Egocentrism.\n" +
+                "A value of 1.0 means every conversion results in a random lunar item.\n" +
+                "A value of 0.7 means there's a 70% chance for Egocentrism vs a 30% chance for a random lunar item.");
+
+            ConfigConversionSelectionType = Config.Bind("6. Transform - Rules", "Conversion Selection Type", "Weighted",
+                "Determines method for choosing items. Case insensitive. Allowed values:\n" +
+                "Weighted: tends towards higher weighted items and tiers but maintains randomness.\n" +
+                "Priority: always chooses the highest priority item available. If there's a tie, selects one at random.");
+
             ConfigRarityPriorityList = Config.Bind("6. Transform - Rules", "Rarity:Priority List",
-                "voidyellow:50, voidred:40, red:40, yellow:30, voidgreen:20, green:20, voidwhite:10, white:10, blue:0",
+                "voidyellow:100, voidred:70, voidgreen:60, red:50, yellow:40, green:30, voidwhite:20, white:10, blue:0",
                 "A priority of 0 or a negative priority blacklists that tier from Egocentrism.\n" +
                 "If a rarity is not listed here, it cannot be converted by Egocentrism.\n" +
                 "Higher numbers means Egocentrism is more conditioned to select that tier of item.\n" +
@@ -375,8 +421,9 @@ namespace MegalomaniaPlugin
                 "Valid Tiers:\n" +
                 "white,green,red,blue,yellow,voidwhite,voidgreen,voidred,voidyellow,\n" +
                 "common,uncommon,legendary,lunar,boss,voidcommon,voiduncommon,voidlegendary,voidboss");
+
             ConfigItemPriorityList = Config.Bind("6. Transform - Rules", "Item:Priority List",
-                "BeetleGland:5, GhostOnKill:5, MinorConstructOnKill:5, RoboBallBuddy:10, ScrapGreen:15, ScrapWhite:10, ScrapYellow:5, ScrapRed:1, RegeneratingScrap:-10, ExtraStatsOnLevelUp:20, FreeChest:-19, ExtraShrineItem:10, CloverVoid:-15, LowerPricedChests:-19, ResetChests:-5",
+                "BeetleGland:5, GhostOnKill:5, MinorConstructOnKill:5, RoboBallBuddy:10, ScrapGreen:30, ScrapWhite:10, ScrapYellow:60, ScrapRed:20, RegeneratingScrap:-20, ExtraStatsOnLevelUp:15, FreeChest:-20, ExtraShrineItem:10, CloverVoid:15, LowerPricedChests:-20, ResetChests:-5",
                 "A priority of 0 blacklists that item from Egocentrism.\n" +
                 "Can be negative. If negative is of a greater magnitude than the rarity, the item is blacklisted.\n" +
                 "If a rarity that an item is part of is blacklisted but the item shows up in this list with a positive value, that item won't be blacklisted.\n" +
@@ -386,7 +433,12 @@ namespace MegalomaniaPlugin
                 "Case sensitive, somewhat whitespace sensitive.\n" +
                 "The diplay name might not always equal the codename of the item.\n" +
                 "For example: Wax Quail = JumpBoost. To find the name out for yourself, download the DebugToolkit mod, open the console (ctrl + alt + backtick (`)) and type in \"list_item\"");
+            #endregion
 
+            #region Extras
+            ConfigDebugItemSpawning = Config.Bind("7. Extras", "Cheat: Debug Item Spawning", false,
+                "If true, then pressing F2 grants an assortment of items and drops an Egocentrism.");
+            #endregion
 
             ConfigCleanup();
         }
@@ -624,16 +676,52 @@ namespace MegalomaniaPlugin
                 i++;
             }
 
+            if (acceptableItems.Count <= 0)
+            {
+                return;
+            }
+
             while (amount > 0)
             {
-                //tranform weighted random item
-                ItemIndex itemToTransform = getRandomWeightedDictKey(acceptableItems, transformRng);
+                ItemIndex itemToTransform = ItemIndex.None;
+
+                //modality select item to transform
+                switch (parsedConversionSelectionType)
+                {
+                    case Utils.ConversionSelectionType.weighted:
+                        itemToTransform = getRandomWeightedDictKey(acceptableItems, transformRng);
+                        break;
+                    case Utils.ConversionSelectionType.priority:
+                        itemToTransform = getHighestWeightedDictKey(acceptableItems, transformRng);
+                        break;
+                }
+
+                if (itemToTransform == ItemIndex.None)
+                {
+                    //something went wrong. this line shouldn't be reachable.
+                    Log.Error("Egocentrism tried to convert an item but something went horribly wrong. This shouldn't ever happen. Did you mess up the selection mode Enum or forget to incorporate a function?");
+                    Log.Info($"Conversion Selection Type: '{parsedConversionSelectionType}'");
+                    break;
+                }
+
                 inventory.RemoveItem(itemToTransform);
+
+                //determine whether to give ego or a lunar
+                ItemDef toGive = DLC1Content.Items.LunarSun;
+                if (ConfigRandomLunar.Value > 0 && allowedConversions.Count > 0 && transformRng.nextNormalizedFloat <= ConfigRandomLunar.Value)
+                {
+                    toGive = ItemCatalog.GetItemDef(allowedConversions[transformRng.RangeInt(0, allowedConversions.Count)]);
+                }
                 inventory.GiveItem(DLC1Content.Items.LunarSun);
+
+                //balance capped time modality
                 if (ConfigTransformMaxPerStage.Value > 0)
                     inventory.GiveItem(transformToken, 1 + ConfigTransformMaxPerStageStacking.Value);
+
+                //inform owner that ego happened
                 CharacterMasterNotificationQueue.SendTransformNotification(master, itemToTransform, DLC1Content.Items.LunarSun.itemIndex, CharacterMasterNotificationQueue.TransformationType.LunarSun);
                 
+                //remove item from allowed selectables if it no longer exists
                 if (inventory.GetItemCount(itemToTransform) <= 0)
                 {
                     acceptableItems.Remove(itemToTransform);
@@ -641,6 +729,27 @@ namespace MegalomaniaPlugin
                 
                 amount--;
             }
+        }
+
+        private static T getHighestWeightedDictKey<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
+        {
+            int highestFound = 0;
+            List<T> highestTsFound = new List<T>();
+            foreach (var v in dict)
+            {
+                if (v.Value == highestFound)
+                {
+                    highestTsFound.Add(v.Key);
+                    continue;
+                }
+                if (v.Value > highestFound)
+                {
+                    highestFound = v.Value;
+                    highestTsFound.Clear();
+                    highestTsFound.Add(v.Key);
+                }
+            }
+            return highestTsFound[rng.RangeInt(0, highestTsFound.Count)];
         }
 
         private static T getRandomWeightedDictKey<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
@@ -692,10 +801,10 @@ namespace MegalomaniaPlugin
         }
 
         // The Update() method is run on every frame of the game.
-        /*private void Update()
+        private void Update()
         {
-            // This if statement checks if the player has currently pressed F2.
-            if (Input.GetKeyDown(KeyCode.F2))
+            // This if statement checks if the player has currently pressed F2 and has debug cheats enabled.
+            if (ConfigDebugItemSpawning.Value && Input.GetKeyDown(KeyCode.F2))
             {
                 CharacterMaster player = PlayerCharacterMasterController.instances[0].master;
                 // Get the player body to use a position:
@@ -706,18 +815,24 @@ namespace MegalomaniaPlugin
                 Log.Info($"Player pressed F2. Spawning items at coordinates {transform.position}");
                 //ego
                 PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex(DLC1Content.Items.LunarSun.itemIndex), transform.position, transform.forward * 20f);
-                player.inventory.GiveItem(RoR2Content.Items.ScrapWhite.itemIndex);
-                player.inventory.GiveItem(RoR2Content.Items.ScrapGreen.itemIndex);
-                player.inventory.GiveItem(RoR2Content.Items.ScrapRed.itemIndex);
-                player.inventory.GiveItem(RoR2Content.Items.ScrapYellow.itemIndex);
-                player.inventory.GiveItem(RoR2Content.Items.FocusConvergence.itemIndex);
-                player.inventory.GiveItem(DLC1Content.Items.BearVoid.itemIndex);
-                player.inventory.GiveItem(DLC1Content.Items.MissileVoid.itemIndex);
-                player.inventory.GiveItem(DLC1Content.Items.ExtraLifeVoid.itemIndex);
-                player.inventory.GiveItem(DLC1Content.Items.CloverVoid.itemIndex);
-                player.inventory.GiveItem(DLC1Content.Items.RegeneratingScrapConsumed.itemIndex);
-                player.inventory.GiveItem(DLC2Content.Items.LowerPricedChestsConsumed.itemIndex);
+                player.inventory.GiveItem(RoR2Content.Items.ScrapWhite, 5);
+                player.inventory.GiveItem(RoR2Content.Items.ArmorPlate, 5);
+                player.inventory.GiveItem(RoR2Content.Items.ScrapGreen, 5);
+                player.inventory.GiveItem(DLC2Content.Items.ExtraStatsOnLevelUp, 5);
+                player.inventory.GiveItem(RoR2Content.Items.Squid, 5);
+                player.inventory.GiveItem(RoR2Content.Items.ScrapRed, 5);
+                player.inventory.GiveItem(RoR2Content.Items.AlienHead, 5);
+                player.inventory.GiveItem(RoR2Content.Items.ScrapYellow, 5);
+                player.inventory.GiveItem(DLC1Content.Items.MinorConstructOnKill, 5);
+                player.inventory.GiveItem(RoR2Content.Items.ParentEgg, 5);
+                player.inventory.GiveItem(RoR2Content.Items.FocusConvergence, 5);
+                player.inventory.GiveItem(DLC1Content.Items.BearVoid, 5);
+                player.inventory.GiveItem(DLC1Content.Items.MissileVoid, 5);
+                player.inventory.GiveItem(DLC1Content.Items.ExtraLifeVoid, 5);
+                player.inventory.GiveItem(DLC1Content.Items.CloverVoid, 5);
+                player.inventory.GiveItem(DLC1Content.Items.RegeneratingScrapConsumed, 5);
+                player.inventory.GiveItem(DLC2Content.Items.LowerPricedChestsConsumed, 5);
             }
-        }*/
+        }
     }
 }
