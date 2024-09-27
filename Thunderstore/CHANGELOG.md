@@ -5,8 +5,9 @@
 - Fix unnecessary dependency error
 
 ## 0.2.0
-- Add Randomly Lunar configurable property
-- Add Conversion Selection Type configurable property
+- Added Convert To configurable property
+- Added Conversion Selection Type configurable property
+- Added Minimum Time configurable property
+- Migrated Benthic-like transformation to its own properties
 - Adjust default weights for a larger difference and a higher focus on void items
 - Nerf default bomb generation frequency (1 -> 0.5)
-- Added debug cheats config option for testing purposes

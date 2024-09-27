@@ -90,24 +90,27 @@ namespace MegalomaniaPlugin
         #endregion
 
         #region transform time
+        private static ConfigEntry<int> ConfigStageStartTransform { get; set; }
+        private static ConfigEntry<double> ConfigStageStartTransformStack {  get; set; }
         private static ConfigEntry<double> ConfigTransformTime { get; set; }
         private static ConfigEntry<double> ConfigTransformTimePerStack { get; set; }
         private static ConfigEntry<double> ConfigTransformTimeDiminishing { get; set; }
+        private static ConfigEntry<double> ConfigTransformTimeMin { get; set; }
         private static ConfigEntry<double> ConfigTransformTimeMax {  get; set; }
         private static ConfigEntry<int> ConfigTransformMaxPerStage { get; set; }
         private static ConfigEntry<int> ConfigTransformMaxPerStageStacking { get; set; }
         #endregion
 
         #region transform rules
-        private static ConfigEntry<double> ConfigRandomLunar { get; set; }
         private static ConfigEntry<string> ConfigConversionSelectionType {  get; set; }
+        private static ConfigEntry<string> ConfigItemsToConvertTo { get; set; }
         private static ConfigEntry<string> ConfigRarityPriorityList {  get; set; }
         private static ConfigEntry<string> ConfigItemPriorityList { get; set; }
         #endregion
 
         #endregion
 
-        private static ConfigEntry<bool> ConfigDebugItemSpawning { get; set; }
+        private static bool cheats = true;
 
         #region Items
         private static ItemDef transformToken;
@@ -119,11 +122,11 @@ namespace MegalomaniaPlugin
         //Parsed Item:Priority List
         private static Dictionary<ItemIndex, int> parsedItemPriorityList;
 
-        //Allowed conversions
-        private static List<ItemIndex> allowedConversions;
-
         //Selection mode
         private static Utils.ConversionSelectionType parsedConversionSelectionType;
+
+        //Items to convert to
+        private static Dictionary<ItemIndex, int> parsedItemConvertToList;
 
         // The Awake() method is run at the very start when the game is initialized.
         public void Awake()
@@ -141,7 +144,7 @@ namespace MegalomaniaPlugin
             InitItems();
 
             ParseRarityPriorityList();
-            //parse item priority list after items have loaded
+            //parse items after items have loaded
             On.RoR2.ItemCatalog.SetItemDefs += ItemCatalog_SetItemDefs;
             ParseConversionSelectionType();
 
@@ -151,6 +154,61 @@ namespace MegalomaniaPlugin
             //Helper for transform time modality (benthic and timed max)
             //Clears counter for timed max, and does the conversion for benthic
             On.RoR2.CharacterMaster.OnServerStageBegin += CharacterMaster_OnServerStageBegin;
+        }
+
+        private void ItemCatalog_SetItemDefs(On.RoR2.ItemCatalog.orig_SetItemDefs orig, ItemDef[] newItemDefs)
+        {
+            orig(newItemDefs);
+            ParseItemPriorityList();
+            ParseItemConvertToList();
+        }
+
+        private void ParseItemConvertToList()
+        {
+            parsedItemConvertToList = new Dictionary<ItemIndex, int>();
+
+            string[] itemPriority = ConfigItemsToConvertTo.Value.Split(',');
+
+            foreach (string iP in itemPriority)
+            {
+                string[] ItePrio = iP.Split(":");
+                //if there's an incorrect amount of colons, skip
+                if (ItePrio.Length != 2)
+                {
+                    Log.Warning($"(ConvertTo) Invalid amount of colons: `{iP}`");
+                    continue;
+                }
+                string indexString = ItePrio[0].Trim();
+                string priorityString = ItePrio[1].Trim();
+                //if either side of the colon is blank, skip
+                if (indexString.IsNullOrWhiteSpace() || priorityString.IsNullOrWhiteSpace())
+                {
+                    Log.Warning($"(ConvertTo) Invalid empty item or priority: `{iP}`");
+                    continue;
+                }
+                int priority;
+                //if the priority is not an integer, skip
+                if (!int.TryParse(priorityString, out priority))
+                {
+                    Log.Warning($"(ConvertTo) Invalid priority: `{iP}`");
+                    continue;
+                }
+                //if the item is undefined, skip
+                ItemIndex index = ItemCatalog.FindItemIndex(indexString);
+                if (index == ItemIndex.None)
+                {
+                    Log.Warning($"(ConvertTo) Invalid item: `{iP}`");
+                    continue;
+                }
+                //if the rarity is already in the list, skip
+                if (parsedItemConvertToList.ContainsKey(index))
+                {
+                    Log.Warning($"(ConvertTo) Item already in list: `{iP}`");
+                    continue;
+                }
+                parsedItemConvertToList.Add(index, priority);
+                Log.Info($"(ConvertTo) Item:Priority added! `{iP}`");
+            }
         }
 
         private void ParseConversionSelectionType()
@@ -167,13 +225,6 @@ namespace MegalomaniaPlugin
             return;
         }
 
-        private void ItemCatalog_SetItemDefs(On.RoR2.ItemCatalog.orig_SetItemDefs orig, ItemDef[] newItemDefs)
-        {
-            orig(newItemDefs);
-            ParseItemPriorityList();
-            allowedConversions = ItemCatalog.lunarItemList;
-        }
-
         private void ParseRarityPriorityList()
         {
             parsedRarityPriorityList = new Dictionary<ItemTier, int>();
@@ -186,7 +237,7 @@ namespace MegalomaniaPlugin
                 //if there's an incorrect amount of colons, skip
                 if (Rapier.Length != 2)
                 {
-                    Log.Warning($"Invalid amount of colons: `{rP}`");
+                    Log.Warning($"(Rarity:Priority) Invalid amount of colons: `{rP}`");
                     continue;
                 }
                 string tierString = Rapier[0].Trim().ToLower();
@@ -194,37 +245,37 @@ namespace MegalomaniaPlugin
                 //if either side of the colon is blank, skip
                 if (tierString.IsNullOrWhiteSpace() || priorityString.IsNullOrWhiteSpace())
                 {
-                    Log.Warning($"Invalid empty tier or priority: `{rP}`");
+                    Log.Warning($"(Rarity:Priority) Invalid empty tier or priority: `{rP}`");
                     continue;
                 }
                 int priority;
                 //if the priority is not an integer, skip
                 if (!int.TryParse(priorityString, out priority) || priority < 0)
                 {
-                    Log.Warning($"Invalid priority: `{rP}`");
-                    continue;
-                }
-                //if the priority is 0, skip
-                if (priority == 0)
-                {
-                    Log.Info($"Blacklisting Rarity:Priority '{rP}'");
+                    Log.Warning($"(Rarity:Priority) Invalid priority: `{rP}`");
                     continue;
                 }
                 //if the rarity is undefined, skip
                 if (!Enum.TryParse(tierString, out Utils.ItemTierLookup tier))
                 {
-                    Log.Warning($"Invalid rarity: `{rP}`");
+                    Log.Warning($"(Rarity:Priority) Invalid rarity: `{rP}`");
+                    continue;
+                }
+                //if the priority is 0, skip
+                if (priority == 0)
+                {
+                    Log.Info($"(Rarity:Priority) Blacklisting Rarity:Priority! '{rP}'");
                     continue;
                 }
                 ItemTier rarity = (ItemTier)tier;
                 //if the rarity is already in the list, skip
                 if (parsedRarityPriorityList.ContainsKey(rarity))
                 {
-                    Log.Warning($"Rarity already in list: `{rP}`");
+                    Log.Warning($"(Rarity:Priority) Rarity already in list: `{rP}`");
                     continue;
                 }
                 parsedRarityPriorityList.Add(rarity, priority);
-                Log.Info($"Rarity:Priority added! `{rP}`");
+                Log.Info($"(Rarity:Priority) Rarity:Priority added! `{rP}`");
             }
         }
 
@@ -240,7 +291,7 @@ namespace MegalomaniaPlugin
                 //if there's an incorrect amount of colons, skip
                 if (ItePrio.Length != 2)
                 {
-                    Log.Warning($"Invalid amount of colons: `{iP}`");
+                    Log.Warning($"(Item:Priority) Invalid amount of colons: `{iP}`");
                     continue;
                 }
                 string indexString = ItePrio[0].Trim();
@@ -248,31 +299,31 @@ namespace MegalomaniaPlugin
                 //if either side of the colon is blank, skip
                 if (indexString.IsNullOrWhiteSpace() || priorityString.IsNullOrWhiteSpace())
                 {
-                    Log.Warning($"Invalid empty item or priority: `{iP}`");
+                    Log.Warning($"(Item:Priority) Invalid empty item or priority: `{iP}`");
                     continue;
                 }
                 int priority;
                 //if the priority is not an integer, skip
                 if (!int.TryParse(priorityString, out priority))
                 {
-                    Log.Warning($"Invalid priority: `{iP}`");
+                    Log.Warning($"(Item:Priority) Invalid priority: `{iP}`");
                     continue;
                 }
                 //if the item is undefined, skip
                 ItemIndex index = ItemCatalog.FindItemIndex(indexString);
                 if (index == ItemIndex.None)
                 {
-                    Log.Warning($"Invalid item: `{iP}`");
+                    Log.Warning($"(Item:Priority) Invalid item: `{iP}`");
                     continue;
                 }
                 //if the rarity is already in the list, skip
                 if (parsedItemPriorityList.ContainsKey(index))
                 {
-                    Log.Warning($"Item already in list: `{iP}`");
+                    Log.Warning($"(Item:Priority) Item already in list: `{iP}`");
                     continue;
                 }
                 parsedItemPriorityList.Add(index, priority);
-                Log.Info($"Item:Priority added! `{iP}`");
+                Log.Info($"(Item:Priority) Item:Priority added! `{iP}`");
             }
         }
 
@@ -381,38 +432,60 @@ namespace MegalomaniaPlugin
             #region Transform
             //TRANSFORMING
             //Time
+            ConfigStageStartTransform = Config.Bind("5. Transform - When to Transform", "Stage Start Transformations", 5,
+                "How many items to convert on stage start, similar to Benthic Bloom.\n" +
+                "If this is set to 0 or a negative number, conversion on stage start is disabled.");
+
+            ConfigStageStartTransformStack = Config.Bind("5. Transform - When to Transform", "Stage Start Transformations Per Stack", 0.0,
+                "How many items to convert on stage start per additional stack.\n" +
+                "Rounded down after calculating.");
+
             ConfigTransformTime = Config.Bind("5. Transform - When to Transform", "Default Transform Timer", 0.0,
                 "The time it takes for Egocentrism to transform another item.\n" +
-                "If this is set to 0, behavior is overriden to happen on entering a new stage instead of over time, like Benthic Bloom.\n" +
+                "If this is set to 0 or a negative number, conversion over time is disabled.\n" +
                 "Minimum allowed value is 1/60th of a second.");
+
             ConfigTransformTimePerStack = Config.Bind("5. Transform - When to Transform", "Flat Time Per Stack", 0.0,
                 "Time to add to transform timer per stack. Can be negative.\n" +
                 "Ignored if Default Transform Timer is 0");
+
             ConfigTransformTimeDiminishing = Config.Bind("5. Transform - When to Transform", "Multiplier Per Stack", 0.9,
                 "Every stack multiplies the transform timer by this value.");
+
+            ConfigTransformTimeMin = Config.Bind("5. Transform - When to Transform", "Min Time", 6.0,
+                "The minimum time Egocentrism can take before transforming an item.\n" +
+                "Anything less than 1/60th of a second is forced back up to 1/60th of a second.");
+
             ConfigTransformTimeMax = Config.Bind("5. Transform - When to Transform", "Max Time", 120.0,
                 "The maximum time Egocentrism can take before transforming an item.\n" +
                 "Anything less than 1/60th of a second is forced back up to 1/60th of a second.");
-            ConfigTransformMaxPerStage = Config.Bind("5. Transform - When to Transform", "Max Transforms Per Stage", 5,
+
+            ConfigTransformMaxPerStage = Config.Bind("5. Transform - When to Transform", "Max Transforms Per Stage", 10,
                 "Caps how many transformations can happen per stage.\n" +
-                "Set negative to disable cap, unless Default Transform Timer is 0.");
+                "Set negative to disable cap.");
+
             ConfigTransformMaxPerStageStacking = Config.Bind("5. Transform - When to Transform", "Max Transforms Per Stage Per Stack", 0,
                 "How many transformations to add to the cap per stack.\n" +
                 "The system is intelligent and won't count stacks added by conversion from the current stage.");
             //Rules
-            ConfigRandomLunar = Config.Bind("6. Transform - Rules", "Randomly Lunar", 0.0,
-                "A chance determining whether converting yields Egocentrism or a random lunar item. Eg:\n" +
-                "A value of 0.0 means every conversion results in Egocentrism.\n" +
-                "A value of 1.0 means every conversion results in a random lunar item.\n" +
-                "A value of 0.7 means there's a 70% chance for a random lunar item vs a 30% chance for Egocentrism.");
-
             ConfigConversionSelectionType = Config.Bind("6. Transform - Rules", "Conversion Selection Type", "Weighted",
                 "Determines method for choosing items. Case insensitive. Allowed values:\n" +
                 "Weighted: tends towards higher weighted items and tiers but maintains randomness.\n" +
                 "Priority: always chooses the highest priority item available. If there's a tie, selects one at random.");
 
+            ConfigItemsToConvertTo = Config.Bind("6. Transform - Rules", "Items To Convert To",
+                "LunarSun:1",
+                "A list of item that Egocentrism can convert other items into. Items cannot be converted into themselves.\n" +
+                "If this is empty, conversion is disabled completely.\n" +
+                "If an item does not make an appearance in this list or has a value of 0, that item cannot be converted into.\n" +
+                "Higher numbers means Egocentrism is more conditioned to convert to that item, possibly instead of Egocentrism.\n" +
+                "Format: item1:integer, item2:int, item3:i, etc\n" +
+                "Case sensitive, somewhat whitespace sensitive.\n" +
+                "The diplay name might not always equal the codename of the item.\n" +
+                "For example: Egocentrism = LunarSun. To find the name out for yourself, download the DebugToolkit mod, open the console (ctrl + alt + backtick (`)) and type in \"list_item\"");
+
             ConfigRarityPriorityList = Config.Bind("6. Transform - Rules", "Rarity:Priority List",
-                "voidyellow:100, voidred:70, voidgreen:60, red:50, yellow:40, green:30, voidwhite:20, white:10, blue:0",
+                "voidyellow:100, voidred:70, voidgreen:60, red:50, yellow:40, voidwhite:35, green:30, white:15, blue:0",
                 "A priority of 0 or a negative priority blacklists that tier from Egocentrism.\n" +
                 "If a rarity is not listed here, it cannot be converted by Egocentrism.\n" +
                 "Higher numbers means Egocentrism is more conditioned to select that tier of item.\n" +
@@ -424,6 +497,7 @@ namespace MegalomaniaPlugin
 
             ConfigItemPriorityList = Config.Bind("6. Transform - Rules", "Item:Priority List",
                 "BeetleGland:5, GhostOnKill:5, MinorConstructOnKill:5, RoboBallBuddy:10, ScrapGreen:30, ScrapWhite:10, ScrapYellow:60, ScrapRed:20, RegeneratingScrap:-20, ExtraStatsOnLevelUp:15, FreeChest:-20, ExtraShrineItem:10, CloverVoid:15, LowerPricedChests:-20, ResetChests:-5",
+                "Egocentrism is always blacklisted and cannot be converted from.\n" +
                 "A priority of 0 blacklists that item from Egocentrism.\n" +
                 "Can be negative. If negative is of a greater magnitude than the rarity, the item is blacklisted.\n" +
                 "If a rarity that an item is part of is blacklisted but the item shows up in this list with a positive value, that item won't be blacklisted.\n" +
@@ -433,11 +507,6 @@ namespace MegalomaniaPlugin
                 "Case sensitive, somewhat whitespace sensitive.\n" +
                 "The diplay name might not always equal the codename of the item.\n" +
                 "For example: Wax Quail = JumpBoost. To find the name out for yourself, download the DebugToolkit mod, open the console (ctrl + alt + backtick (`)) and type in \"list_item\"");
-            #endregion
-
-            #region Extras
-            ConfigDebugItemSpawning = Config.Bind("7. Extras", "Cheat: Debug Item Spawning", false,
-                "If true, then pressing F2 grants an assortment of items and drops an Egocentrism.");
             #endregion
 
             ConfigCleanup();
@@ -579,20 +648,30 @@ namespace MegalomaniaPlugin
         private void handleTransUpdate(CharacterBody body, ref float transformTimer, int stack, Xoroshiro128Plus transformRng)
         {
             //with acceptance
+            //if time conversion is disabled, stop
+            if (ConfigTransformMaxPerStage.Value <= 0)
+            {
+                return;
+            }
             transformTimer += Time.fixedDeltaTime;
-            double calcTimer = Math.Min(
+            double calcTimer = Math.Max(ConfigTransformTimeMin.Value,
+                Math.Min(
                 ConfigTransformTime.Value * Math.Pow(ConfigTransformTimeDiminishing.Value, stack)
                 + stack * ConfigTransformTimePerStack.Value
-                , ConfigTransformTimeMax.Value);
+                , ConfigTransformTimeMax.Value)
+                );
+            //if the timer's not up, stop
             if (!(transformTimer > calcTimer))
             {
                 return;
             }
             transformTimer = 0f;
+            //if something is null, stop
             if (!body.master || !body.inventory)
             {
                 return;
             }
+            //if exceeds max items already converted, stop
             if (ConfigTransformMaxPerStage.Value > 0
                 && body.inventory.GetItemCount(transformToken.itemIndex) >= ConfigTransformMaxPerStage.Value + (stack - 1) * ConfigTransformMaxPerStageStacking.Value)
             {
@@ -613,7 +692,7 @@ namespace MegalomaniaPlugin
             if (!inventory || !master)
                 return;
 
-            if (amount <= 0)
+            if (amount < 1)
                 return;
 
             if (transformRng == null)
@@ -621,18 +700,40 @@ namespace MegalomaniaPlugin
                 transformRng = new Xoroshiro128Plus(Run.instance.seed);
             }
 
-            List<ItemIndex> list = new List<ItemIndex>(inventory.itemAcquisitionOrder);
+            if (parsedItemConvertToList.Count < 1)
+            {
+                return;
+            }
+
+            List<ItemIndex> inventoryItemsList = new List<ItemIndex>(inventory.itemAcquisitionOrder);
             //Util.ShuffleList(list, transformRng);
 
-            int items = list.Count;
-            if (items <= 0)
+            if (inventoryItemsList.Count < 1)
                 return;
 
+            //determine whether to give ego or a lunar
+            ItemDef toGive = DLC1Content.Items.LunarSun;
+
+            ItemIndex testItemConvertTo = getRandomWeightedDictKey(parsedItemConvertToList, transformRng);
+
+            if (testItemConvertTo == ItemIndex.None)
+            {
+                //something went wrong. this line shouldn't be reachable.
+                Log.Error("Egocentrism tried to convert an item but something went wrong. Did you mess up the list of items to convert to?\n" +
+                $"Parsed ConvertTo List: '{parsedItemConvertToList}'");
+                return;
+            }
+
             Dictionary<ItemIndex, int> acceptableItems = new Dictionary<ItemIndex, int>();
-            foreach (ItemIndex itemIndex in list)
+            foreach (ItemIndex itemIndex in inventoryItemsList)
             {
                 //don't convert egocentrism
                 if (itemIndex == DLC1Content.Items.LunarSun.itemIndex)
+                {
+                    continue;
+                }
+                //don't convert itself
+                if (itemIndex == testItemConvertTo)
                 {
                     continue;
                 }
@@ -693,30 +794,22 @@ namespace MegalomaniaPlugin
                 if (itemToTransform == ItemIndex.None)
                 {
                     //something went wrong. this line shouldn't be reachable.
-                    Log.Error("Egocentrism tried to convert an item but something went horribly wrong. This shouldn't ever happen. Did you mess up the selection mode Enum or forget to incorporate a function?");
-                    Log.Info($"Conversion Selection Type: '{parsedConversionSelectionType}'");
+                    Log.Error("Egocentrism tried to convert an item but something went horribly wrong. This shouldn't ever happen. Did you mess up the selection mode Enum or forget to incorporate a function?\n"+
+                    $"Conversion Selection Type: '{parsedConversionSelectionType}'");
                     break;
                 }
 
                 inventory.RemoveItem(itemToTransform);
-
-                //determine whether to give ego or a lunar
-                ItemDef toGive = DLC1Content.Items.LunarSun;
-                if (ConfigRandomLunar.Value > 0 && allowedConversions.Count > 0 && transformRng.RangeFloat(0, 1) < ConfigRandomLunar.Value)
-                {
-                    toGive = ItemCatalog.GetItemDef(allowedConversions[transformRng.RangeInt(0, allowedConversions.Count)]);
-                }
                 inventory.GiveItem(toGive);
 
-                //balance capped time modality
-                if (ConfigTransformMaxPerStage.Value > 0)
-                    inventory.GiveItem(transformToken, 1 + ConfigTransformMaxPerStageStacking.Value);
+                //balance transformation over time
+                inventory.GiveItem(transformToken, 1 + ConfigTransformMaxPerStageStacking.Value);
 
                 //inform owner that ego happened
                 CharacterMasterNotificationQueue.SendTransformNotification(master, itemToTransform, toGive.itemIndex, CharacterMasterNotificationQueue.TransformationType.LunarSun);
                 
                 //remove item from allowed selectables if it no longer exists
-                if (inventory.GetItemCount(itemToTransform) <= 0)
+                if (inventory.GetItemCount(itemToTransform) < 1)
                 {
                     acceptableItems.Remove(itemToTransform);
                 }
@@ -781,9 +874,13 @@ namespace MegalomaniaPlugin
             }
 
             int egoCount = inventory.GetItemCount(DLC1Content.Items.LunarSun);
-            if (ConfigTransformTime.Value == 0 && egoCount > 0)
+            if (ConfigStageStartTransform.Value > 0 && egoCount > 0)
             {
-                int amount = ConfigTransformMaxPerStage.Value + (egoCount - 1) * ConfigTransformMaxPerStageStacking.Value;
+                int amount = ConfigStageStartTransform.Value + (int) ((egoCount - 1) * ConfigStageStartTransformStack.Value);
+                if (ConfigTransformMaxPerStage.Value > 0)
+                {
+                    amount = Math.Min(amount, ConfigTransformMaxPerStage.Value);
+                }
                 TransformItems(inventory, amount, null, self);
             }
 
@@ -798,7 +895,7 @@ namespace MegalomaniaPlugin
         private void Update()
         {
             // This if statement checks if the player has currently pressed F2 and has debug cheats enabled.
-            if (ConfigDebugItemSpawning.Value && Input.GetKeyDown(KeyCode.F2))
+            if (cheats && Input.GetKeyDown(KeyCode.F2))
             {
                 CharacterMaster player = PlayerCharacterMasterController.instances[0].master;
                 // Get the player body to use a position:
