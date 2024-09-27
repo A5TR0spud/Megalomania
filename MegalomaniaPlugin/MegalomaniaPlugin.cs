@@ -719,7 +719,7 @@ namespace MegalomaniaPlugin
                     inventory.GiveItem(transformToken, 1 + ConfigTransformMaxPerStageStacking.Value);
 
                 //inform owner that ego happened
-                CharacterMasterNotificationQueue.SendTransformNotification(master, itemToTransform, DLC1Content.Items.LunarSun.itemIndex, CharacterMasterNotificationQueue.TransformationType.LunarSun);
+                CharacterMasterNotificationQueue.SendTransformNotification(master, itemToTransform, toGive.itemIndex, CharacterMasterNotificationQueue.TransformationType.LunarSun);
                 
                 //remove item from allowed selectables if it no longer exists
                 if (inventory.GetItemCount(itemToTransform) <= 0)
