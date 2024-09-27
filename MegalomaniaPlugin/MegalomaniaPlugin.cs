@@ -440,7 +440,7 @@ namespace MegalomaniaPlugin
                 "How many items to convert on stage start per additional stack.\n" +
                 "Rounded down after calculating.");
 
-            ConfigTransformTime = Config.Bind("5. Transform - When to Transform", "Default Transform Timer", 60.0,
+            ConfigTransformTime = Config.Bind("5. Transform - When to Transform", "Default Transform Timer", -60.0,
                 "The time it takes for Egocentrism to transform another item.\n" +
                 "If this is set a negative number, conversion over time is disabled.\n" +
                 "Minimum allowed value is 1/60th of a second.");
