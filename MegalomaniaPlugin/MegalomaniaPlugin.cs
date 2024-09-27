@@ -404,7 +404,7 @@ namespace MegalomaniaPlugin
                 "A chance determining whether converting yields Egocentrism or a random lunar item. Eg:\n" +
                 "A value of 0.0 means every conversion results in Egocentrism.\n" +
                 "A value of 1.0 means every conversion results in a random lunar item.\n" +
-                "A value of 0.7 means there's a 70% chance for Egocentrism vs a 30% chance for a random lunar item.");
+                "A value of 0.7 means there's a 70% chance for a random lunar item vs a 30% chance for Egocentrism.");
 
             ConfigConversionSelectionType = Config.Bind("6. Transform - Rules", "Conversion Selection Type", "Weighted",
                 "Determines method for choosing items. Case insensitive. Allowed values:\n" +
