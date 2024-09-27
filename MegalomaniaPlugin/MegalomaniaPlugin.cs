@@ -712,7 +712,7 @@ namespace MegalomaniaPlugin
                 {
                     toGive = ItemCatalog.GetItemDef(allowedConversions[transformRng.RangeInt(0, allowedConversions.Count)]);
                 }
-                inventory.GiveItem(DLC1Content.Items.LunarSun);
+                inventory.GiveItem(toGive);
 
                 //balance capped time modality
                 if (ConfigTransformMaxPerStage.Value > 0)
