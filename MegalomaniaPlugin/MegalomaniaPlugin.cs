@@ -725,8 +725,7 @@ namespace MegalomaniaPlugin
                     return;
                 }
 
-                List<ItemIndex> toGiveList = new List<ItemIndex>();
-                toGiveList = sortDictByWeighted(parsedItemConvertToList, transformRng);
+                List<ItemIndex> toGiveList = sortDictByWeighted(parsedItemConvertToList, transformRng);
 
                 //do the thing
                 ItemIndex toGive = ItemIndex.None;
@@ -741,12 +740,13 @@ namespace MegalomaniaPlugin
                 }
 
                 //no valid targets to be transformed into were found.
-                //perhaps egocentrism convert to list is empty?
+                //perhaps egocentrism convert to list is empty or only contains egocentrism?
                 //if so, then that means no conversions can happen and this code shouldn't be reachable
                 if (toGive == ItemIndex.None)
                 {
                     if (!toGiveList.Contains(DLC1Content.Items.LunarSun.itemIndex))
                     {
+                        Log.Warning($"No valid target found: '{toTransform}' -> '{toGiveList}'");
                         return;
                     }
                     continue;
@@ -822,10 +822,11 @@ namespace MegalomaniaPlugin
         private static List<T> sortDictByWeighted<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
         {
             List<T> list = new List<T>();
-            foreach (var v in dict)
+            for (int i = 0; i < dict.Count; i++)
             {
-                list.Prepend(getWeightedDictKey(dict, rng));
-                dict.Remove(v.Key);
+                T k = getWeightedDictKey(dict, rng);
+                list.Prepend(k);
+                dict.Remove(k);
             }
             return list;
         }
