@@ -97,8 +97,8 @@ namespace MegalomaniaPlugin
         private static ConfigEntry<double> ConfigTransformTimeDiminishing { get; set; }
         private static ConfigEntry<double> ConfigTransformTimeMin { get; set; }
         private static ConfigEntry<double> ConfigTransformTimeMax {  get; set; }
-        private static ConfigEntry<int> ConfigTransformMaxPerStage { get; set; }
-        private static ConfigEntry<int> ConfigTransformMaxPerStageStacking { get; set; }
+        private static ConfigEntry<int> ConfigMaxTransformationsPerStage { get; set; }
+        private static ConfigEntry<int> ConfigMaxTransformationsPerStageStacking { get; set; }
         #endregion
 
         #region transform rules
@@ -460,13 +460,14 @@ namespace MegalomaniaPlugin
                 "The maximum time Egocentrism can take before transforming an item.\n" +
                 "Anything less than 1/60th of a second is forced back up to 1/60th of a second.");
 
-            ConfigTransformMaxPerStage = Config.Bind("5. Transform - When to Transform", "Max Transforms Per Stage", 10,
+            ConfigMaxTransformationsPerStage = Config.Bind("5. Transform - When to Transform", "Max Transforms Per Stage", 10,
                 "Caps how many transformations can happen per stage.\n" +
                 "Set negative to disable cap.");
 
-            ConfigTransformMaxPerStageStacking = Config.Bind("5. Transform - When to Transform", "Max Transforms Per Stage Per Stack", 0,
+            ConfigMaxTransformationsPerStageStacking = Config.Bind("5. Transform - When to Transform", "Max Transforms Per Stage Per Stack", 0,
                 "How many transformations to add to the cap per stack.\n" +
                 "The system is intelligent and won't count stacks added by conversion from the current stage.");
+
             //Rules
             ConfigConversionSelectionType = Config.Bind("6. Transform - Rules", "Conversion Selection Type", "Weighted",
                 "Determines method for choosing items. Case insensitive. Allowed values:\n" +
@@ -590,9 +591,10 @@ namespace MegalomaniaPlugin
             Xoroshiro128Plus transformRng = self.GetFieldValue<Xoroshiro128Plus>("transformRng");
             projectileTimer += Time.fixedDeltaTime;
 
-            handleBombs(body, ref projectileTimer, stack, projectilePrefab);
+            if ((bool)projectilePrefab && projectilePrefab != null)
+                handleBombs(body, ref projectileTimer, stack, projectilePrefab);
 
-            if (ConfigTransformTime.Value > 0)
+            if (ConfigTransformTime.Value >= 0)
                 handleTransUpdate(body, ref transformTimer, stack, transformRng);
 
             self.SetFieldValue("projectileTimer", projectileTimer);
@@ -648,11 +650,6 @@ namespace MegalomaniaPlugin
         private void handleTransUpdate(CharacterBody body, ref float transformTimer, int stack, Xoroshiro128Plus transformRng)
         {
             //with acceptance
-            //if time conversion is disabled, stop
-            if (ConfigTransformTime.Value < 0)
-            {
-                return;
-            }
             transformTimer += Time.fixedDeltaTime;
             double calcTimer = ConfigTransformTime.Value * Math.Pow(ConfigTransformTimeDiminishing.Value, stack) + stack * ConfigTransformTimePerStack.Value;
 
@@ -660,7 +657,7 @@ namespace MegalomaniaPlugin
             calcTimer = Math.Max(calcTimer, ConfigTransformTimeMin.Value);
 
             //if the timer's not up, stop
-            if (!(transformTimer > calcTimer))
+            if (transformTimer <= calcTimer)
             {
                 return;
             }
@@ -671,8 +668,8 @@ namespace MegalomaniaPlugin
                 return;
             }
             //if exceeds max items already converted, stop
-            if (ConfigTransformMaxPerStage.Value > 0
-                && body.inventory.GetItemCount(transformToken.itemIndex) >= ConfigTransformMaxPerStage.Value + (stack - 1) * ConfigTransformMaxPerStageStacking.Value)
+            if (ConfigMaxTransformationsPerStage.Value > 0
+                && body.inventory.GetItemCount(transformToken) >= ConfigMaxTransformationsPerStage.Value + (stack - 1) * ConfigMaxTransformationsPerStageStacking.Value)
             {
                 return;
             }
@@ -759,7 +756,7 @@ namespace MegalomaniaPlugin
                 inventory.GiveItem(toGive);
 
                 //balance transformation over time
-                inventory.GiveItem(transformToken, 1 + ConfigTransformMaxPerStageStacking.Value);
+                inventory.GiveItem(transformToken, 1 + ConfigMaxTransformationsPerStageStacking.Value);
 
                 //inform owner that ego happened
                 CharacterMasterNotificationQueue.SendTransformNotification(master, toTransform, toGive, CharacterMasterNotificationQueue.TransformationType.LunarSun);
@@ -888,22 +885,24 @@ namespace MegalomaniaPlugin
                 return;
             }
 
-            int egoCount = inventory.GetItemCount(DLC1Content.Items.LunarSun);
-            if (ConfigStageStartTransform.Value > 0 && egoCount > 0)
-            {
-                int amount = ConfigStageStartTransform.Value + (int) ((egoCount - 1) * ConfigStageStartTransformStack.Value);
-                if (ConfigTransformMaxPerStage.Value > 0)
-                {
-                    amount = Math.Min(amount, ConfigTransformMaxPerStage.Value);
-                }
-                TransformItems(inventory, amount, null, self);
-            }
-
             int tokenCount = inventory.GetItemCount(transformToken);
             if (tokenCount > 0)
             {
                 inventory.RemoveItem(transformToken, tokenCount);
             }
+
+            int egoCount = inventory.GetItemCount(DLC1Content.Items.LunarSun);
+            if (ConfigStageStartTransform.Value > 0 && egoCount > 0)
+            {
+                int amount = ConfigStageStartTransform.Value + (int) ((egoCount - 1) * ConfigStageStartTransformStack.Value);
+                if (ConfigMaxTransformationsPerStage.Value > 0)
+                {
+                    amount = Math.Min(amount, ConfigMaxTransformationsPerStage.Value);
+                }
+                TransformItems(inventory, amount, null, self);
+            }
+
+            
         }
 
         // The Update() method is run on every frame of the game.
