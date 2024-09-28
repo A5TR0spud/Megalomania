@@ -725,7 +725,26 @@ namespace MegalomaniaPlugin
                     return;
                 }
 
-                List<ItemIndex> toGiveList = sortDictByWeighted(parsedItemConvertToList, transformRng);
+                Log.Debug("before");
+                foreach (var kpv in parsedItemConvertToList)
+                {
+                    Log.Debug($"Key: {kpv.Key}\n" +
+                        $"Value: {kpv.Value}");
+                }
+
+                List<ItemIndex> toGiveList = getWeightedDictKeyAndBackup(parsedItemConvertToList, transformRng);
+                Log.Debug("toGiveList");
+                foreach (ItemIndex ii in toGiveList)
+                {
+                    Log.Debug($"ItemIndex: {ii}");
+                }
+
+                Log.Debug("after");
+                foreach (var kpv in parsedItemConvertToList)
+                {
+                    Log.Debug($"Key: {kpv.Key}\n" +
+                        $"Value: {kpv.Value}");
+                }
 
                 //do the thing
                 ItemIndex toGive = ItemIndex.None;
@@ -746,7 +765,8 @@ namespace MegalomaniaPlugin
                 {
                     if (!toGiveList.Contains(DLC1Content.Items.LunarSun.itemIndex))
                     {
-                        Log.Warning($"No valid target found: '{toTransform}' -> '{toGiveList}'");
+                        Log.Debug($"No valid target found: '{toTransform}' -> '{toGiveList.ToArray().ToString()}'\n" +
+                            $"Parsed: '{parsedItemConvertToList.Keys.ToArray().ToString()}'");
                         return;
                     }
                     continue;
@@ -819,15 +839,28 @@ namespace MegalomaniaPlugin
             return weightedInventory;
         }
 
-        private static List<T> sortDictByWeighted<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
+        private static List<T> getWeightedDictKeyAndBackup<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
         {
-            List<T> list = new List<T>();
-            for (int i = 0; i < dict.Count; i++)
+            Dictionary<T, int> copy = new Dictionary<T, int>();
+            foreach (var kvp in dict)
             {
-                T k = getWeightedDictKey(dict, rng);
-                list.Prepend(k);
-                dict.Remove(k);
+                copy.Add(kvp.Key, kvp.Value);
             }
+            Log.Debug("copy");
+            foreach (var kpv in copy)
+            {
+                Log.Debug($"Key: {kpv.Key}\n" +
+                    $"Value: {kpv.Value}");
+            }
+
+            List<T> list = new List<T>();
+            for (int i = 0; i < dict.Count && i < 2; i++)
+            {
+                T key = getWeightedDictKey(copy, rng);
+                list.Add(key);
+                copy.Remove(key);
+            }
+            list.Reverse();
             return list;
         }
 
