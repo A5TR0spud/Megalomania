@@ -761,11 +761,12 @@ namespace MegalomaniaPlugin
                 //no valid targets to be transformed into were found.
                 //perhaps egocentrism convert to list is empty or only contains egocentrism?
                 //if so, then that means no conversions can happen and this code shouldn't be reachable
+                //if this code is reached anyway, that means an item somehow has multiple indices?
                 if (toGive == ItemIndex.None)
                 {
                     if (!toGiveList.Contains(DLC1Content.Items.LunarSun.itemIndex))
                     {
-                        Log.Debug($"No valid target found: '{toTransform}' -> '{toGiveList.ToArray().ToString()}'\n" +
+                        Log.Error($"No valid target found: '{toTransform}' -> '{toGiveList.ToArray().ToString()}'\n" +
                             $"Parsed: '{parsedItemConvertToList.Keys.ToArray().ToString()}'");
                         return;
                     }
