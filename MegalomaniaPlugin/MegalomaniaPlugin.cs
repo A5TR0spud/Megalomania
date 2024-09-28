@@ -704,45 +704,85 @@ namespace MegalomaniaPlugin
                 transformRng = new Xoroshiro128Plus(Run.instance.seed);
             }
 
+            Dictionary<ItemIndex, int> weightedInventory = weighInventory(inventory);
+
+            while (amount > 0 && weightedInventory.Count > 0)
+            {
+                //shuffle
+                ItemIndex toTransform = ItemIndex.None;
+                //modality select item to transform
+                switch (parsedConversionSelectionType)
+                {
+                    case Utils.ConversionSelectionType.weighted:
+                        toTransform = getWeightedDictKey(weightedInventory, transformRng);
+                        break;
+                    case Utils.ConversionSelectionType.priority:
+                        toTransform = getPriorityDictKey(weightedInventory, transformRng);
+                        break;
+                }
+
+                if (toTransform == ItemIndex.None)
+                {
+                    Log.Error("Egocentrism tried to convert an item but something went wrong. Did you forget to add an enum or function?\n" +
+                        $"parsedConversionSelectionType: '{parsedConversionSelectionType}'");
+                    return;
+                }
+
+                List<ItemIndex> toGiveList = new List<ItemIndex>();
+                toGiveList = sortDictByWeighted(parsedItemConvertToList, transformRng);
+
+                //do the thing
+                ItemIndex toGive = ItemIndex.None;
+                foreach (ItemIndex corruptor in toGiveList)
+                {
+                    //don't convert something into itself
+                    if (toTransform != corruptor)
+                    {
+                        toGive = corruptor;
+                        break;
+                    }
+                }
+
+                //no valid targets to be transformed into were found.
+                //perhaps egocentrism convert to list is empty?
+                //if so, then that means no conversions can happen and this code shouldn't be reachable
+                if (toGive == ItemIndex.None)
+                {
+                    if (!toGiveList.Contains(DLC1Content.Items.LunarSun.itemIndex))
+                    {
+                        return;
+                    }
+                    continue;
+                }
+
+                inventory.RemoveItem(toTransform);
+                inventory.GiveItem(toGive);
+
+                //balance transformation over time
+                inventory.GiveItem(transformToken, 1 + ConfigTransformMaxPerStageStacking.Value);
+
+                //inform owner that ego happened
+                CharacterMasterNotificationQueue.SendTransformNotification(master, toTransform, toGive, CharacterMasterNotificationQueue.TransformationType.LunarSun);
+
+                //remove item from possible selections if it no longer exists
+                if (inventory.GetItemCount(toTransform) < 1)
+                {
+                    weightedInventory.Remove(toTransform);
+                }
+
+                amount--;
+            }
+        }
+
+        private static Dictionary<ItemIndex, int> weighInventory(Inventory inventory)
+        {
             List<ItemIndex> inventoryItemsList = new List<ItemIndex>(inventory.itemAcquisitionOrder);
-            //Util.ShuffleList(list, transformRng);
 
-            if (inventoryItemsList.Count < 1)
-                return;
-
-            //determine what item to give
-            //note: it's possible to select an item to convert into itself with no other options. in this case it should keep looking but instead stops short.
-            ItemDef toGive = DLC1Content.Items.LunarSun;
-
-            ItemIndex toGiveIndex = getRandomWeightedDictKey(parsedItemConvertToList, transformRng);
-
-            if (toGiveIndex == ItemIndex.None)
-            {
-                //something went wrong. this line shouldn't be reachable.
-                Log.Error("Egocentrism tried to convert an item but something went wrong. Did you mess up the list of items to convert to?\n" +
-                $"Parsed ConvertTo List: '{parsedItemConvertToList}'");
-                return;
-            }
-
-            toGive = ItemCatalog.GetItemDef(toGiveIndex);
-            if (!(bool)toGive)
-            {
-                //something went wrong. this line shouldn't be reachable.
-                Log.Error("Egocentrism tried to convert an item but something went wrong. Did you mess up the list of items to convert to?\n" +
-                $"Parsed ConvertTo List: '{parsedItemConvertToList}'");
-                return;
-            }
-
-            Dictionary<ItemIndex, int> acceptableItems = new Dictionary<ItemIndex, int>();
+            Dictionary<ItemIndex, int> weightedInventory = new Dictionary<ItemIndex, int>();
             foreach (ItemIndex itemIndex in inventoryItemsList)
             {
                 //don't convert egocentrism
                 if (itemIndex == DLC1Content.Items.LunarSun.itemIndex)
-                {
-                    continue;
-                }
-                //don't convert itself
-                if (itemIndex == toGiveIndex)
                 {
                     continue;
                 }
@@ -777,57 +817,23 @@ namespace MegalomaniaPlugin
                 }
 
                 //allow item transform
-                acceptableItems.Add(itemIndex, weight);
+                weightedInventory.Add(itemIndex, weight);
             }
-
-            if (acceptableItems.Count < 1)
-            {
-                return;
-            }
-
-            while (amount > 0)
-            {
-                ItemIndex itemToTransform = ItemIndex.None;
-
-                //modality select item to transform
-                switch (parsedConversionSelectionType)
-                {
-                    case Utils.ConversionSelectionType.weighted:
-                        itemToTransform = getRandomWeightedDictKey(acceptableItems, transformRng);
-                        break;
-                    case Utils.ConversionSelectionType.priority:
-                        itemToTransform = getHighestWeightedDictKey(acceptableItems, transformRng);
-                        break;
-                }
-
-                if (itemToTransform == ItemIndex.None)
-                {
-                    //something went wrong. this line shouldn't be reachable.
-                    Log.Error("Egocentrism tried to convert an item but something went horribly wrong. This shouldn't ever happen. Did you mess up the selection mode Enum or forget to incorporate a function?\n"+
-                    $"Conversion Selection Type: '{parsedConversionSelectionType}'");
-                    break;
-                }
-
-                inventory.RemoveItem(itemToTransform);
-                inventory.GiveItem(toGive);
-
-                //balance transformation over time
-                inventory.GiveItem(transformToken, 1 + ConfigTransformMaxPerStageStacking.Value);
-
-                //inform owner that ego happened
-                CharacterMasterNotificationQueue.SendTransformNotification(master, itemToTransform, toGive.itemIndex, CharacterMasterNotificationQueue.TransformationType.LunarSun);
-                
-                //remove item from allowed selectables if it no longer exists
-                if (inventory.GetItemCount(itemToTransform) < 1)
-                {
-                    acceptableItems.Remove(itemToTransform);
-                }
-                
-                amount--;
-            }
+            return weightedInventory;
         }
 
-        private static T getHighestWeightedDictKey<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
+        private static List<T> sortDictByWeighted<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
+        {
+            List<T> list = new List<T>();
+            foreach (var v in dict)
+            {
+                list.Prepend(getWeightedDictKey(dict, rng));
+                dict.Remove(v.Key);
+            }
+            return list;
+        }
+
+        private static T getPriorityDictKey<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
         {
             int highestFound = 0;
             List<T> highestTsFound = new List<T>();
@@ -848,7 +854,7 @@ namespace MegalomaniaPlugin
             return highestTsFound[rng.RangeInt(0, highestTsFound.Count)];
         }
 
-        private static T getRandomWeightedDictKey<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
+        private static T getWeightedDictKey<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
         {
             int totalWeight = 0;
             foreach (var weight in dict.Values)
