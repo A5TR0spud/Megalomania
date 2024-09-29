@@ -703,8 +703,14 @@ namespace MegalomaniaPlugin
 
             Dictionary<ItemIndex, int> weightedInventory = weighInventory(inventory);
 
-            while (amount > 0 && weightedInventory.Count > 0)
+            int i = amount * weightedInventory.Count;
+            int g = 0;
+              
+            while (amount > 0 && weightedInventory.Count > 0 && i > 0)
             {
+                //just in case something goes wrong, don't loop forever
+                i--;
+
                 //shuffle
                 ItemIndex toTransform = ItemIndex.None;
                 //modality select item to transform
@@ -725,26 +731,7 @@ namespace MegalomaniaPlugin
                     return;
                 }
 
-                Log.Debug("before");
-                foreach (var kpv in parsedItemConvertToList)
-                {
-                    Log.Debug($"Key: {kpv.Key}\n" +
-                        $"Value: {kpv.Value}");
-                }
-
                 List<ItemIndex> toGiveList = getWeightedDictKeyAndBackup(parsedItemConvertToList, transformRng);
-                Log.Debug("toGiveList");
-                foreach (ItemIndex ii in toGiveList)
-                {
-                    Log.Debug($"ItemIndex: {ii}");
-                }
-
-                Log.Debug("after");
-                foreach (var kpv in parsedItemConvertToList)
-                {
-                    Log.Debug($"Key: {kpv.Key}\n" +
-                        $"Value: {kpv.Value}");
-                }
 
                 //do the thing
                 ItemIndex toGive = ItemIndex.None;
@@ -759,15 +746,12 @@ namespace MegalomaniaPlugin
                 }
 
                 //no valid targets to be transformed into were found.
-                //perhaps egocentrism convert to list is empty or only contains egocentrism?
-                //if so, then that means no conversions can happen and this code shouldn't be reachable
-                //if this code is reached anyway, that means an item somehow has multiple indices?
+                //perhaps egocentrism convert to list only contains 1 item?
                 if (toGive == ItemIndex.None)
                 {
-                    if (!toGiveList.Contains(DLC1Content.Items.LunarSun.itemIndex))
+                    g++;
+                    if (g >= weightedInventory.Count)
                     {
-                        Log.Error($"No valid target found: '{toTransform}' -> '{toGiveList.ToArray().ToString()}'\n" +
-                            $"Parsed: '{parsedItemConvertToList.Keys.ToArray().ToString()}'");
                         return;
                     }
                     continue;
@@ -846,12 +830,6 @@ namespace MegalomaniaPlugin
             foreach (var kvp in dict)
             {
                 copy.Add(kvp.Key, kvp.Value);
-            }
-            Log.Debug("copy");
-            foreach (var kpv in copy)
-            {
-                Log.Debug($"Key: {kpv.Key}\n" +
-                    $"Value: {kpv.Value}");
             }
 
             List<T> list = new List<T>();
