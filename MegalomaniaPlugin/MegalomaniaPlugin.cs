@@ -181,7 +181,7 @@ namespace MegalomaniaPlugin
         private void LoadAssets() {
             iconsAssetBundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location), "AssetBundles", "megalomaniaassets"));
 
-            EgoPrimarySprite = iconsAssetBundle.LoadAsset<Sprite>("ego_primary_replacement_icon_4");
+            EgoPrimarySprite = iconsAssetBundle.LoadAsset<Sprite>("ego_primary_replacement_icon_5");
         }
 
         private void ItemCatalog_SetItemDefs(On.RoR2.ItemCatalog.orig_SetItemDefs orig, ItemDef[] newItemDefs)
