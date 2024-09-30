@@ -1,0 +1,10 @@
+{
+  "strings": {
+    "MEGALOMANIA_PRIMARY_NAME": "Conceit (Lang Unavailable)",
+    "MEGALOMANIA_PRIMARY_DESCRIPTION": "Hurl lunar bombs for <style=cIsDamage>360% damage</style>. (Lang Unavailable)"
+  },
+  "en": {
+    "MEGALOMANIA_PRIMARY_NAME": "Conceit",
+    "MEGALOMANIA_PRIMARY_DESCRIPTION": "Focus a lunar bomb to an enemy in front of you at any range."
+  }
+}
