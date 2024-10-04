@@ -9,23 +9,22 @@ using UnityEngine.Networking;
 
 namespace MegalomaniaPlugin
 {
-    public static class Utils
+    public class Utils
     {
-        //Thank you ConfigEgocentrism by Judgy53 for code reference:
-        //https://github.com/Judgy53/ConfigEgocentrism/blob/main/ConfigEgocentrism/ConfigEgocentrismPlugin.cs
-
         //Parsed Rarity:Priority List
-        private static Dictionary<ItemTier, int> parsedRarityPriorityList;
+        private Dictionary<ItemTier, int> parsedRarityPriorityList;
 
         //Parsed Item:Priority List
-        private static Dictionary<ItemIndex, int> parsedItemPriorityList;
+        private Dictionary<ItemIndex, int> parsedItemPriorityList;
 
         //Selection mode
-        private static Utils.ConversionSelectionType parsedConversionSelectionType;
+        private Utils.ConversionSelectionType parsedConversionSelectionType;
 
         //Items to convert to
-        private static Dictionary<ItemIndex, int> parsedItemConvertToList;
+        private Dictionary<ItemIndex, int> parsedItemConvertToList;
 
+        //Thank you ConfigEgocentrism by Judgy53 for code reference:
+        //https://github.com/Judgy53/ConfigEgocentrism/blob/main/ConfigEgocentrism/ConfigEgocentrismPlugin.cs
         public enum ItemTierLookup
         {
             white = ItemTier.Tier1,
@@ -62,7 +61,7 @@ namespace MegalomaniaPlugin
             priority = 1
         }
 
-        public static void TransformItems(Inventory inventory, int amount, Xoroshiro128Plus transformRng, CharacterMaster master)
+        public void TransformItems(Inventory inventory, int amount, Xoroshiro128Plus transformRng, CharacterMaster master)
         {
             if (!NetworkServer.active)
             {
@@ -147,7 +146,7 @@ namespace MegalomaniaPlugin
                 inventory.GiveItem(toGive);
 
                 //balance transformation over time
-                inventory.GiveItem(transformToken, 1 + ConfigMaxTransformationsPerStageStacking.Value);
+                inventory.GiveItem(MegalomaniaPlugin.transformToken, 1 + MegalomaniaPlugin.ConfigMaxTransformationsPerStageStacking.Value);
 
                 //inform owner that ego happened
                 CharacterMasterNotificationQueue.SendTransformNotification(master, toTransform, toGive, CharacterMasterNotificationQueue.TransformationType.LunarSun);
@@ -162,7 +161,7 @@ namespace MegalomaniaPlugin
             }
         }
 
-        public static Dictionary<ItemIndex, int> weighInventory(Inventory inventory)
+        public Dictionary<ItemIndex, int> weighInventory(Inventory inventory)
         {
             List<ItemIndex> inventoryItemsList = new List<ItemIndex>(inventory.itemAcquisitionOrder);
 
@@ -210,7 +209,7 @@ namespace MegalomaniaPlugin
             return weightedInventory;
         }
 
-        public static List<T> getWeightedDictKeyAndBackup<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
+        public List<T> getWeightedDictKeyAndBackup<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
         {
             Dictionary<T, int> copy = new Dictionary<T, int>();
             foreach (var kvp in dict)
@@ -229,7 +228,7 @@ namespace MegalomaniaPlugin
             return list;
         }
 
-        public static T getPriorityDictKey<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
+        public T getPriorityDictKey<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
         {
             int highestFound = 0;
             List<T> highestTsFound = new List<T>();
@@ -250,7 +249,7 @@ namespace MegalomaniaPlugin
             return highestTsFound[rng.RangeInt(0, highestTsFound.Count)];
         }
 
-        public static T getWeightedDictKey<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
+        public T getWeightedDictKey<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
         {
             int totalWeight = 0;
             foreach (var weight in dict.Values)
@@ -272,7 +271,7 @@ namespace MegalomaniaPlugin
             return dict.FirstOrDefault().Key;
         }
 
-        public static float determineStatBoost(bool diminishing, float perStack, float max, float stacksize)
+        public float determineStatBoost(bool diminishing, float perStack, float max, float stacksize)
         {
             if (max == 0)
                 //no buff
@@ -288,11 +287,11 @@ namespace MegalomaniaPlugin
                 return perStack * stacksize;
         }
 
-        public static void ParseItemConvertToList()
+        public void ParseItemConvertToList()
         {
             parsedItemConvertToList = new Dictionary<ItemIndex, int>();
 
-            string[] itemPriority = ConfigItemsToConvertTo.Value.Split(',');
+            string[] itemPriority = MegalomaniaPlugin.ConfigItemsToConvertTo.Value.Split(',');
 
             foreach (string iP in itemPriority)
             {
@@ -336,9 +335,9 @@ namespace MegalomaniaPlugin
             }
         }
 
-        public static void ParseConversionSelectionType()
+        public void ParseConversionSelectionType()
         {
-            string toTest = ConfigConversionSelectionType.Value.Trim().ToLower();
+            string toTest = MegalomaniaPlugin.ConfigConversionSelectionType.Value.Trim().ToLower();
             if (Enum.TryParse(toTest, out Utils.ConversionSelectionType conversionType))
             {
                 parsedConversionSelectionType = conversionType;
@@ -350,11 +349,11 @@ namespace MegalomaniaPlugin
             return;
         }
 
-        public static void ParseRarityPriorityList()
+        public void ParseRarityPriorityList()
         {
             parsedRarityPriorityList = new Dictionary<ItemTier, int>();
 
-            string[] rarityPriority = ConfigRarityPriorityList.Value.Split(',');
+            string[] rarityPriority = MegalomaniaPlugin.ConfigRarityPriorityList.Value.Split(',');
 
             foreach (string rP in rarityPriority)
             {
@@ -404,11 +403,11 @@ namespace MegalomaniaPlugin
             }
         }
 
-        public static void ParseItemPriorityList()
+        public void ParseItemPriorityList()
         {
             parsedItemPriorityList = new Dictionary<ItemIndex, int>();
 
-            string[] itemPriority = ConfigItemPriorityList.Value.Split(',');
+            string[] itemPriority = MegalomaniaPlugin.ConfigItemPriorityList.Value.Split(',');
 
             foreach (string iP in itemPriority)
             {

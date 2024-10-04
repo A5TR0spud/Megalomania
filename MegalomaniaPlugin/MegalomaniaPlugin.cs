@@ -118,11 +118,16 @@ namespace MegalomaniaPlugin
         public static ItemDef transformToken;
         #endregion
 
+        public MegalomaniaEgoBehavior megalomaniaEgoBehavior { get; set; }
+        public Utils utils { get; set; }
 
         // The Awake() method is run at the very start when the game is initialized.
         public void Awake()
         {
             Log.Init(Logger);
+            utils = new Utils();
+            megalomaniaEgoBehavior = new MegalomaniaEgoBehavior();
+
             LoadAssets();
             CreateConfig();
 
@@ -132,10 +137,10 @@ namespace MegalomaniaPlugin
             InitItems();
             InitSkills();
 
-            ParseRarityPriorityList();
+            utils.ParseRarityPriorityList();
             //parse items after items have loaded
             On.RoR2.ItemCatalog.SetItemDefs += ItemCatalog_SetItemDefs;
-            ParseConversionSelectionType();
+            utils.ParseConversionSelectionType(); 
 
             //Helper for transform time modality (benthic and timed max)
             //Clears counter for timed max, and does the conversion for benthic
@@ -148,7 +153,7 @@ namespace MegalomaniaPlugin
                 return;
 
             //Override Egocentrism code, haha. Sorry mate.
-            MegalomaniaEgoBehavior.init();
+            megalomaniaEgoBehavior.init(utils);
         }
 
         /*private void CharacterBody_OnInventoryChanged(On.RoR2.CharacterBody.orig_OnInventoryChanged orig, CharacterBody self)
@@ -175,8 +180,8 @@ namespace MegalomaniaPlugin
         private void ItemCatalog_SetItemDefs(On.RoR2.ItemCatalog.orig_SetItemDefs orig, ItemDef[] newItemDefs)
         {
             orig(newItemDefs);
-            ParseItemPriorityList();
-            ParseItemConvertToList();
+            utils.ParseItemPriorityList();
+            utils.ParseItemConvertToList();
         }
 
 
@@ -405,13 +410,13 @@ namespace MegalomaniaPlugin
                         args.baseRegenAdd += count * (float)ConfigRegenPerStack.Value;
 
                         //movement speed
-                        args.baseMoveSpeedAdd += determineStatBoost(ConfigMovementSpeedType.Value, (float)ConfigMovementSpeedPerStack.Value, (float)ConfigMovementSpeedBonusCap.Value, count);
+                        args.baseMoveSpeedAdd += utils.determineStatBoost(ConfigMovementSpeedType.Value, (float)ConfigMovementSpeedPerStack.Value, (float)ConfigMovementSpeedBonusCap.Value, count);
 
                         //damage
                         args.baseDamageAdd += count * (float)ConfigDamagePerStack.Value;
 
                         //attack speed
-                        args.attackSpeedMultAdd += determineStatBoost(ConfigAttackSpeedType.Value, (float)ConfigAttackSpeedPerStack.Value, (float)ConfigAttackSpeedBonusCap.Value, count);
+                        args.attackSpeedMultAdd += utils.determineStatBoost(ConfigAttackSpeedType.Value, (float)ConfigAttackSpeedPerStack.Value, (float)ConfigAttackSpeedBonusCap.Value, count);
 
                         //crit chance
                         args.critAdd += count * (float)ConfigCritChancePerStack.Value;
@@ -453,7 +458,7 @@ namespace MegalomaniaPlugin
                 {
                     amount = Math.Min(amount, ConfigMaxTransformationsPerStage.Value);
                 }
-                TransformItems(inventory, amount, null, self);
+                utils.TransformItems(inventory, amount, null, self);
             }
         }
 

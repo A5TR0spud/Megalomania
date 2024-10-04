@@ -8,12 +8,15 @@ using R2API.Utils;
 
 namespace MegalomaniaPlugin
 {
-    internal class MegalomaniaEgoBehavior
+    public class MegalomaniaEgoBehavior
     {
-        public void init()
+        Utils utils { get; set; }
+
+        public void init(Utils ut)
         {
             On.RoR2.LunarSunBehavior.FixedUpdate += LunarSunBehavior_FixedUpdate;
             On.RoR2.LunarSunBehavior.GetMaxProjectiles += LunarSunBehavior_GetMaxProjectiles;
+            utils = ut;
         }
 
         private void LunarSunBehavior_FixedUpdate(On.RoR2.LunarSunBehavior.orig_FixedUpdate orig, LunarSunBehavior self)
@@ -109,7 +112,7 @@ namespace MegalomaniaPlugin
                 return;
             }
 
-            Utils.TransformItems(body.inventory, 1, transformRng, body.master);
+            utils.TransformItems(body.inventory, 1, transformRng, body.master);
         }
     }
 }
