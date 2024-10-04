@@ -5,6 +5,6 @@
   },
   "en": {
     "MEGALOMANIA_PRIMARY_NAME": "Conceit",
-    "MEGALOMANIA_PRIMARY_DESCRIPTION": "Focus a lunar bomb to an enemy in front of you at any range."
+    "MEGALOMANIA_PRIMARY_DESCRIPTION": "Focus a lunar ball to an enemy in your view for <style=cIsDamage>360% damage</style>."
   }
 }

@@ -41,7 +41,7 @@ namespace MegalomaniaPlugin
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "A5TR0spud";
         public const string PluginName = "Megalomania";
-        public static AssetBundle iconsAssetBundle;
+        public static AssetBundle megalomaniaAssetBundle;
         public static Sprite EgoPrimarySprite;
         //Desc:
         // Buffs Egocentrism to give some stat boosts. Adds blacklist. Highly configurable.
@@ -75,7 +75,7 @@ namespace MegalomaniaPlugin
         #region bomb toggles
         private static ConfigEntry<bool> ConfigEnableBombs { get; set; }
         private static ConfigEntry<bool> ConfigBombStacking { get; set; }
-        //private static ConfigEntry<bool> ConfigNewPrimary { get; set; }
+        private static ConfigEntry<bool> ConfigNewPrimary { get; set; }
         private static ConfigEntry<bool> ConfigPassiveBombAttack { get; set; }
         //private static ConfigEntry<bool> ConfigActiveBombAttack { get; set; }
         //private static ConfigEntry<bool> ConfigOnHitBombAttack { get; set; }
@@ -168,7 +168,8 @@ namespace MegalomaniaPlugin
         {
             SkillLocator skillLocator = self.skillLocator;
 
-            if ((bool)skillLocator)
+            //check for new primary here in case it's enabled partway through a run via another mod
+            if ((bool)skillLocator && ConfigNewPrimary.Value)
             {
                 //prioritize visions of heresy
                 if ((bool)self.inventory && self.inventory.GetItemCount(RoR2Content.Items.LunarPrimaryReplacement) == 0)
@@ -179,9 +180,9 @@ namespace MegalomaniaPlugin
         }
 
         private void LoadAssets() {
-            iconsAssetBundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location), "AssetBundles", "megalomaniaassets"));
+            megalomaniaAssetBundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location), "AssetBundles", "megalomaniaassets"));
 
-            EgoPrimarySprite = iconsAssetBundle.LoadAsset<Sprite>("ego_primary_replacement_icon_5");
+            EgoPrimarySprite = megalomaniaAssetBundle.LoadAsset<Sprite>("ego_primary_replacement_icon_5");
         }
 
         private void ItemCatalog_SetItemDefs(On.RoR2.ItemCatalog.orig_SetItemDefs orig, ItemDef[] newItemDefs)
@@ -438,6 +439,8 @@ namespace MegalomaniaPlugin
                 "Should bombs be generated over time at all?");
             ConfigBombStacking = Config.Bind("4. Bombs - Toggles", "Bomb Stacking", false,
                "If true, the amount of bombs currently orbiting the player is used instead of the amount of Egocentrism, for stacking calculations of player stats.");
+            ConfigNewPrimary = Config.Bind("4. Bombs - Toggles", "Egocentrism Primary", false,
+                "If true, Egocentrism replaces the primary skill with Conceit unless you have Visions of Heresy.");
             ConfigPassiveBombAttack = Config.Bind("4. Bombs - Toggles", "Passive Bomb Attack", true,
                 "Whether the vanilla seeking behavior should apply. If a bomb collides with an enemy, it might still explode.");
             //Stats
@@ -483,10 +486,10 @@ namespace MegalomaniaPlugin
                 "Time to add to transform timer per stack. Can be negative.\n" +
                 "Ignored if Default Transform Timer is 0");
 
-            ConfigTransformTimeDiminishing = Config.Bind("5. Transform - When to Transform", "Multiplier Per Stack", 0.9,
+            ConfigTransformTimeDiminishing = Config.Bind("5. Transform - When to Transform", "Multiplier Per Stack", 1.0,
                 "Every stack multiplies the transform timer by this value.");
 
-            ConfigTransformTimeMin = Config.Bind("5. Transform - When to Transform", "Min Time", 6.0,
+            ConfigTransformTimeMin = Config.Bind("5. Transform - When to Transform", "Min Time", 30.0,
                 "The minimum time Egocentrism can take before transforming an item.\n" +
                 "Anything less than 1/60th of a second is forced back up to 1/60th of a second.");
 
