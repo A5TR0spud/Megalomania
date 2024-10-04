@@ -1,19 +1,11 @@
 using BepInEx;
 using BepInEx.Configuration;
-using EntityStates;
 using R2API;
 using R2API.Utils;
 using RoR2;
-using RoR2.Projectile;
-using RoR2.Skills;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
-using UnityEngine.Diagnostics;
 using UnityEngine.Networking;
 
 //MIT License
@@ -74,10 +66,10 @@ namespace MegalomaniaPlugin
         #region bomb toggles
         public static ConfigEntry<bool> ConfigEnableBombs { get; set; }
         public static ConfigEntry<bool> ConfigBombStacking { get; set; }
+        //public static ConfigEntry<bool> ConfigPrimaryReplacement { get; set; }
         public static ConfigEntry<bool> ConfigPrimaryEnhancement { get; set; }
         public static ConfigEntry<bool> ConfigPassiveBombAttack { get; set; }
-        //public static ConfigEntry<bool> ConfigPrimaryReplacement { get; set; }
-        //public static ConfigEntry<bool> ConfigOnHitBombAttack { get; set; }
+        public static ConfigEntry<bool> ConfigOnHitBombAttack { get; set; }
         #endregion
 
         #region bomb stats
@@ -273,6 +265,9 @@ namespace MegalomaniaPlugin
                 "Comparable to Shuriken.");
             ConfigPassiveBombAttack = Config.Bind("4. Bombs - Toggles", "Passive Bomb Attack", true,
                 "Whether the vanilla seeking behavior should apply. If a bomb collides with an enemy, it might still explode.");
+            ConfigOnHitBombAttack = Config.Bind("4. Bombs - Toggles", "On Hit: Bombs Attack", false,
+                "If true, then any damage done against an enemy will also target an Egocentrism bomb at that enemy.\n" +
+                "It doesn't care about proc coefficient and can proc itself.");
             //Stats
             ConfigBombCreationRate = Config.Bind("5. Bombs - Stats", "Initial Bomb Creation Rate", 3.0,
                 "How many seconds it takes to generate a bomb at stack size 1.");
@@ -419,7 +414,7 @@ namespace MegalomaniaPlugin
                         args.attackSpeedMultAdd += utils.determineStatBoost(ConfigAttackSpeedType.Value, (float)ConfigAttackSpeedPerStack.Value, (float)ConfigAttackSpeedBonusCap.Value, count);
 
                         //crit chance
-                        args.critAdd += count * (float)ConfigCritChancePerStack.Value;
+                        args.critAdd += 100 * count * (float)ConfigCritChancePerStack.Value;
 
                         //armor
                         float calcArmor = count * (float)ConfigArmorPerStack.Value;
