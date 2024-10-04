@@ -5,18 +5,102 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using R2API.Utils;
+using System.Linq;
 
 namespace MegalomaniaPlugin
 {
     public class MegalomaniaEgoBehavior
     {
         Utils utils { get; set; }
+        private readonly BullseyeSearch search = new BullseyeSearch();
 
         public void init(Utils ut)
         {
+            utils = ut;
             On.RoR2.LunarSunBehavior.FixedUpdate += LunarSunBehavior_FixedUpdate;
             On.RoR2.LunarSunBehavior.GetMaxProjectiles += LunarSunBehavior_GetMaxProjectiles;
-            utils = ut;
+
+            if (MegalomaniaPlugin.ConfigPrimaryEnhancement.Value)
+            {
+                On.RoR2.LunarSunBehavior.OnEnable += LunarSunBehavior_OnEnable;
+                On.RoR2.LunarSunBehavior.OnDisable += LunarSunBehavior_OnDisable;
+            }
+        }
+
+        private void LunarSunBehavior_OnEnable(On.RoR2.LunarSunBehavior.orig_OnEnable orig, LunarSunBehavior self)
+        {
+            orig(self);
+            CharacterBody body = self.GetFieldValue<CharacterBody>("body");
+            if ((bool)body)
+            {
+                body.onSkillActivatedServer += OnSkillActivated;
+            }
+        }
+
+        private void OnSkillActivated(GenericSkill skill)
+        {
+            CharacterBody body = skill.characterBody;
+            SkillLocator skillLocator = body.GetComponent<SkillLocator>();
+            if ((object)skillLocator?.primary == skill && body.master.GetDeployableCount(DeployableSlot.LunarSunBomb) > 0)
+            {
+                HurlBomb(body);
+            }
+        }
+
+        private void HurlBomb(CharacterBody body)
+        {
+            Ray aimRay = GetAimRay(body);
+
+            List<DeployableInfo> list = body.master.deployablesList;
+            foreach (DeployableInfo info in list)
+            {
+                if (info.slot == DeployableSlot.LunarSunBomb)
+                {
+                    ProjectileSphereTargetFinder targetFinder = info.deployable.gameObject.GetComponent<ProjectileSphereTargetFinder>();
+                    if (!(bool)targetFinder)
+                        continue;
+                    if (targetFinder.hasTarget)
+                        continue;
+
+                    targetFinder.SetTarget(getTrackingTarget(aimRay, body));
+                    break;
+                }
+            }
+        }
+
+        public HurtBox getTrackingTarget(Ray aimRay, CharacterBody body)
+        {
+            search.teamMaskFilter = TeamMask.all;
+            search.teamMaskFilter.RemoveTeam(body.teamComponent.teamIndex);
+            search.filterByLoS = true;
+            search.searchOrigin = aimRay.origin;
+            search.searchDirection = aimRay.direction;
+            search.sortMode = BullseyeSearch.SortMode.DistanceAndAngle;
+            search.maxDistanceFilter = float.PositiveInfinity;
+            search.maxAngleFilter = 30;
+            search.RefreshCandidates();
+            search.FilterOutGameObject(body.gameObject);
+            return search.GetResults().FirstOrDefault();
+        }
+
+        private Ray GetAimRay(CharacterBody body)
+        {
+            InputBankTest inputBank = body.GetComponent<InputBankTest>();
+            if ((bool)inputBank)
+            {
+                return new Ray(inputBank.aimOrigin, inputBank.aimDirection);
+            }
+            return new Ray(body.transform.position, body.transform.forward);
+        }
+
+        private void LunarSunBehavior_OnDisable(On.RoR2.LunarSunBehavior.orig_OnDisable orig, LunarSunBehavior self)
+        {
+            orig(self);
+            CharacterBody body = self.GetFieldValue<CharacterBody>("body");
+            if ((bool)body)
+            {
+                body.onSkillActivatedServer -= OnSkillActivated;
+            }
         }
 
         private void LunarSunBehavior_FixedUpdate(On.RoR2.LunarSunBehavior.orig_FixedUpdate orig, LunarSunBehavior self)

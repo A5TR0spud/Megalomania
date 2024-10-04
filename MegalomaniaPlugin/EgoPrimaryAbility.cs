@@ -59,7 +59,7 @@ namespace MegalomaniaPlugin
         public override void OnEnter()
         {
             base.OnEnter();
-            this.duration = this.baseDuration / base.attackSpeedStat;
+            /*this.duration = this.baseDuration / base.attackSpeedStat;
             Ray aimRay = base.GetAimRay();
             base.StartAimMode(aimRay, 2f, false);
 
@@ -93,7 +93,7 @@ namespace MegalomaniaPlugin
                         }
                     }
                 }
-            }
+            }*/
         }
 
         /*protected virtual GenericDamageOrb CreateEgoOrb()
@@ -123,20 +123,7 @@ namespace MegalomaniaPlugin
             }
         }*/
 
-        public HurtBox getTrackingTarget(Ray aimRay)
-        {
-            search.teamMaskFilter = TeamMask.all;
-            search.teamMaskFilter.RemoveTeam(teamComponent.teamIndex);
-            search.filterByLoS = true;
-            search.searchOrigin = aimRay.origin;
-            search.searchDirection = aimRay.direction;
-            search.sortMode = BullseyeSearch.SortMode.DistanceAndAngle;
-            search.maxDistanceFilter = maxTrackingDistance;
-            search.maxAngleFilter = maxTrackingAngle;
-            search.RefreshCandidates();
-            search.FilterOutGameObject(base.gameObject);
-            return search.GetResults().FirstOrDefault();
-        }
+        
 
         public override void OnExit()
         {
