@@ -26,45 +26,6 @@ namespace MegalomaniaPlugin
                 On.RoR2.LunarSunBehavior.OnEnable += LunarSunBehavior_OnEnable;
                 On.RoR2.LunarSunBehavior.OnDisable += LunarSunBehavior_OnDisable;
             }
-
-            if (MegalomaniaPlugin.ConfigOnHitBombAttack.Value)
-            {
-                On.RoR2.HealthComponent.TakeDamageProcess += HealthComponent_TakeDamageProcess;
-            }
-        }
-
-        private void HealthComponent_TakeDamageProcess(On.RoR2.HealthComponent.orig_TakeDamageProcess orig, HealthComponent self, DamageInfo damageInfo)
-        {
-            orig(self, damageInfo);
-
-            CharacterBody body = self.GetFieldValue<CharacterBody>("body");
-            if (!damageInfo.attacker)
-            {
-                return;
-            }
-            CharacterBody attacker = damageInfo.attacker.GetComponent<CharacterBody>();
-
-            if (body && attacker && body != attacker)
-            {
-                if (attacker.master.GetDeployableCount(DeployableSlot.LunarSunBomb) > 0)
-                {
-                    List<DeployableInfo> list = body.master.deployablesList;
-                    foreach (DeployableInfo info in list)
-                    {
-                        if (info.slot == DeployableSlot.LunarSunBomb)
-                        {
-                            ProjectileSphereTargetFinder targetFinder = info.deployable.gameObject.GetComponent<ProjectileSphereTargetFinder>();
-                            if (!(bool)targetFinder)
-                                continue;
-                            if (targetFinder.hasTarget)
-                                continue;
-
-                            targetFinder.SetTarget(body.mainHurtBox);
-                            break;
-                        }
-                    }
-                }
-            }
         }
 
         private void LunarSunBehavior_OnEnable(On.RoR2.LunarSunBehavior.orig_OnEnable orig, LunarSunBehavior self)

@@ -69,7 +69,7 @@ namespace MegalomaniaPlugin
         //public static ConfigEntry<bool> ConfigPrimaryReplacement { get; set; }
         public static ConfigEntry<bool> ConfigPrimaryEnhancement { get; set; }
         public static ConfigEntry<bool> ConfigPassiveBombAttack { get; set; }
-        public static ConfigEntry<bool> ConfigOnHitBombAttack { get; set; }
+        //public static ConfigEntry<bool> ConfigOnHitBombAttack { get; set; }
         #endregion
 
         #region bomb stats
@@ -265,9 +265,9 @@ namespace MegalomaniaPlugin
                 "Comparable to Shuriken.");
             ConfigPassiveBombAttack = Config.Bind("4. Bombs - Toggles", "Passive Bomb Attack", true,
                 "Whether the vanilla seeking behavior should apply. If a bomb collides with an enemy, it might still explode.");
-            ConfigOnHitBombAttack = Config.Bind("4. Bombs - Toggles", "On Hit: Bombs Attack", false,
+            /*ConfigOnHitBombAttack = Config.Bind("4. Bombs - Toggles", "On Hit: Bombs Attack", false,
                 "If true, then any damage done against an enemy will also target an Egocentrism bomb at that enemy.\n" +
-                "It doesn't care about proc coefficient and can proc itself.");
+                "It doesn't care about proc coefficient (unless it's zero), but can't proc itself.");*/
             //Stats
             ConfigBombCreationRate = Config.Bind("5. Bombs - Stats", "Initial Bomb Creation Rate", 3.0,
                 "How many seconds it takes to generate a bomb at stack size 1.");
