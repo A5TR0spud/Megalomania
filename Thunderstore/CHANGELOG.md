@@ -1,4 +1,8 @@
 
+## 1.0.1
+
+- Fix primary replacement config using wrong option (enhancement)
+
 ## 1.0.0
 
 - Added Convert To configurable property

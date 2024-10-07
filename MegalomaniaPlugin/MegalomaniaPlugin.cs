@@ -33,7 +33,7 @@ namespace MegalomaniaPlugin
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "A5TR0spud";
         public const string PluginName = "Megalomania";
-        public const string PluginVersion = "1.0.0";
+        public const string PluginVersion = "1.0.1";
 
         public static AssetBundle megalomaniaAssetBundle;
         public static Sprite EgoPrimarySprite;
@@ -152,8 +152,7 @@ namespace MegalomaniaPlugin
         {
             SkillLocator skillLocator = self.skillLocator;
 
-            //check for new primary here in case it's enabled partway through a run via another mod
-            if ((bool)skillLocator && ConfigPrimaryEnhancement.Value)
+            if ((bool)skillLocator && ConfigPrimaryReplacement.Value)
             {
                 //prioritize visions of heresy
                 if ((bool)self.inventory && self.inventory.GetItemCount(RoR2Content.Items.LunarPrimaryReplacement) == 0)
