@@ -10,7 +10,7 @@ namespace MegalomaniaPlugin
 {
     internal class EgoPrimarySkillDef : SkillDef
     {
-        public override bool IsReady([NotNull] GenericSkill skillSlot)
+        /*public override bool IsReady([NotNull] GenericSkill skillSlot)
         {
             int ego = skillSlot.characterBody.master.GetDeployableCount(DeployableSlot.LunarSunBomb);
             return base.IsReady(skillSlot) && ego > 0;
@@ -20,6 +20,6 @@ namespace MegalomaniaPlugin
         {
             int ego = skillSlot.characterBody.master.GetDeployableCount(DeployableSlot.LunarSunBomb);
             return base.CanExecute(skillSlot) && ego > 0;
-        }
+        }*/
     }
 }

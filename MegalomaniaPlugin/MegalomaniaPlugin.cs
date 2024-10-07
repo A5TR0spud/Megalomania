@@ -66,7 +66,7 @@ namespace MegalomaniaPlugin
         #region bomb toggles
         public static ConfigEntry<bool> ConfigEnableBombs { get; set; }
         public static ConfigEntry<bool> ConfigBombStacking { get; set; }
-        //public static ConfigEntry<bool> ConfigPrimaryReplacement { get; set; }
+        public static ConfigEntry<bool> ConfigPrimaryReplacement { get; set; }
         public static ConfigEntry<bool> ConfigPrimaryEnhancement { get; set; }
         public static ConfigEntry<bool> ConfigPassiveBombAttack { get; set; }
         //public static ConfigEntry<bool> ConfigOnHitBombAttack { get; set; }
@@ -138,7 +138,7 @@ namespace MegalomaniaPlugin
             //Clears counter for timed max, and does the conversion for benthic
             On.RoR2.CharacterMaster.OnServerStageBegin += CharacterMaster_OnServerStageBegin;
 
-            //On.RoR2.CharacterBody.OnInventoryChanged += CharacterBody_OnInventoryChanged;
+            On.RoR2.CharacterBody.OnInventoryChanged += CharacterBody_OnInventoryChanged;
 
             //everything from here on out is disabled in compatibility mode
             if (ConfigCompatibilityMode.Value)
@@ -148,7 +148,7 @@ namespace MegalomaniaPlugin
             megalomaniaEgoBehavior.init(utils);
         }
 
-        /*private void CharacterBody_OnInventoryChanged(On.RoR2.CharacterBody.orig_OnInventoryChanged orig, CharacterBody self)
+        private void CharacterBody_OnInventoryChanged(On.RoR2.CharacterBody.orig_OnInventoryChanged orig, CharacterBody self)
         {
             SkillLocator skillLocator = self.skillLocator;
 
@@ -161,7 +161,7 @@ namespace MegalomaniaPlugin
             }
 
             orig(self);
-        }*/
+        }
 
         private void LoadAssets() {
             megalomaniaAssetBundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location), "AssetBundles", "megalomaniaassets"));
@@ -260,6 +260,8 @@ namespace MegalomaniaPlugin
                 "Should bombs be generated over time at all?");
             ConfigBombStacking = Config.Bind("4. Bombs - Toggles", "Bomb Stacking", false,
                "If true, the amount of bombs currently orbiting the player is used instead of the amount of Egocentrism, for stacking calculations of player stats.");
+            ConfigPrimaryReplacement = Config.Bind("4. Bombs - Toggles", "Egocentrism Primary REPLACEMENT", false,
+                "If true, holding Egocentrism replaces the primary skill with Conceit unless you have Visions of Heresy.");
             ConfigPrimaryEnhancement = Config.Bind("4. Bombs - Toggles", "Egocentrism Primary Enhancement", false,
                 "If true, Egocentrism enhances your primary skill by firing Egocentrism bombs at enemies within 30 degrees of view.\n" +
                 "Comparable to Shuriken.");
