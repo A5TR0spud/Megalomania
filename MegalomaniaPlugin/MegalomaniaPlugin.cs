@@ -156,7 +156,7 @@ namespace MegalomaniaPlugin
             {
                 //prioritize visions of heresy
                 if ((bool)self.inventory && self.inventory.GetItemCount(RoR2Content.Items.LunarPrimaryReplacement) == 0)
-                    self.ReplaceSkillIfItemPresent(skillLocator.primary, DLC1Content.Items.LunarSun.itemIndex, EgoPrimaryAbility.EgoPrimarySkill);
+                    self.ReplaceSkillIfItemPresent(skillLocator.primary, DLC1Content.Items.LunarSun.itemIndex, ConceitAbility.ConceitSkill);
             }
 
             orig(self);
@@ -203,7 +203,7 @@ namespace MegalomaniaPlugin
 
         private void InitSkills()
         {
-            EgoPrimaryAbility.initEgoPrimary(EgoPrimarySprite);
+            ConceitAbility.initEgoPrimary(EgoPrimarySprite);
         }
 
         private void CreateConfig()
