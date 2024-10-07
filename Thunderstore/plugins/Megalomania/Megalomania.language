@@ -5,6 +5,6 @@
   },
   "en": {
     "MEGALOMANIA_PRIMARY_NAME": "Conceit",
-    "MEGALOMANIA_PRIMARY_DESCRIPTION": "Focus a lunar ball to an enemy in your view for <style=cIsDamage>360% damage</style>."
+    "MEGALOMANIA_PRIMARY_DESCRIPTION": "Fire a lunar shard for <style=cIsDamage>360% damage</style>."
   }
 }

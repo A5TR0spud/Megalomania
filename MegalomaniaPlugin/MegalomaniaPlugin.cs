@@ -1,19 +1,11 @@
 using BepInEx;
 using BepInEx.Configuration;
-using EntityStates;
 using R2API;
 using R2API.Utils;
 using RoR2;
-using RoR2.Projectile;
-using RoR2.Skills;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
-using UnityEngine.Diagnostics;
 using UnityEngine.Networking;
 
 //MIT License
@@ -41,100 +33,93 @@ namespace MegalomaniaPlugin
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "A5TR0spud";
         public const string PluginName = "Megalomania";
+        public const string PluginVersion = "1.0.0";
+
         public static AssetBundle megalomaniaAssetBundle;
         public static Sprite EgoPrimarySprite;
-        //Desc:
-        // Buffs Egocentrism to give some stat boosts. Adds blacklist. Highly configurable.
-        public const string PluginVersion = "0.2.0";
-
+        
         #region Constants and Configs
 
-        private static ConfigEntry<bool> ConfigCompatibilityMode { get; set; }
+        public static ConfigEntry<bool> ConfigCompatibilityMode { get; set; }
 
         #region defensive
-        private static ConfigEntry<double> ConfigMaxHealthPerStack { get; set; }
-        private static ConfigEntry<double> ConfigRegenPerStack { get; set; }
-        private static ConfigEntry<double> ConfigArmorPerStack { get; set; }
-        private static ConfigEntry<double> ConfigArmorMax { get; set; }
+        public static ConfigEntry<double> ConfigMaxHealthPerStack { get; set; }
+        public static ConfigEntry<double> ConfigRegenPerStack { get; set; }
+        public static ConfigEntry<double> ConfigArmorPerStack { get; set; }
+        public static ConfigEntry<double> ConfigArmorMax { get; set; }
         #endregion
 
         #region offensive
-        private static ConfigEntry<double> ConfigDamagePerStack { get; set; }
-        private static ConfigEntry<double> ConfigCritChancePerStack { get; set; }
-        private static ConfigEntry<bool> ConfigAttackSpeedType { get; set; }
-        private static ConfigEntry<double> ConfigAttackSpeedPerStack { get; set; }
-        private static ConfigEntry<double> ConfigAttackSpeedBonusCap { get; set; }
+        public static ConfigEntry<double> ConfigDamagePerStack { get; set; }
+        public static ConfigEntry<double> ConfigCritChancePerStack { get; set; }
+        public static ConfigEntry<bool> ConfigAttackSpeedType { get; set; }
+        public static ConfigEntry<double> ConfigAttackSpeedPerStack { get; set; }
+        public static ConfigEntry<double> ConfigAttackSpeedBonusCap { get; set; }
         #endregion
 
         #region movement
-        private static ConfigEntry<bool> ConfigMovementSpeedType { get; set; }
-        private static ConfigEntry<double> ConfigMovementSpeedPerStack { get; set; }
-        private static ConfigEntry<double> ConfigMovementSpeedBonusCap { get; set; }
+        public static ConfigEntry<bool> ConfigMovementSpeedType { get; set; }
+        public static ConfigEntry<double> ConfigMovementSpeedPerStack { get; set; }
+        public static ConfigEntry<double> ConfigMovementSpeedBonusCap { get; set; }
         #endregion
 
         #region bomb toggles
-        private static ConfigEntry<bool> ConfigEnableBombs { get; set; }
-        private static ConfigEntry<bool> ConfigBombStacking { get; set; }
-        private static ConfigEntry<bool> ConfigNewPrimary { get; set; }
-        private static ConfigEntry<bool> ConfigPassiveBombAttack { get; set; }
-        //private static ConfigEntry<bool> ConfigActiveBombAttack { get; set; }
-        //private static ConfigEntry<bool> ConfigOnHitBombAttack { get; set; }
+        public static ConfigEntry<bool> ConfigEnableBombs { get; set; }
+        public static ConfigEntry<bool> ConfigBombStacking { get; set; }
+        public static ConfigEntry<bool> ConfigPrimaryReplacement { get; set; }
+        public static ConfigEntry<bool> ConfigPrimaryEnhancement { get; set; }
+        public static ConfigEntry<bool> ConfigPassiveBombAttack { get; set; }
+        //public static ConfigEntry<bool> ConfigOnHitBombAttack { get; set; }
         #endregion
 
         #region bomb stats
-        private static ConfigEntry<double> ConfigBombCreationRate { get; set; }
-        private static ConfigEntry<double> ConfigBombCreationStackingMultiplier { get; set; }
-        private static ConfigEntry<double> ConfigBombCreationStackingAdder { get; set; }
-        private static ConfigEntry<double> ConfigBombDamage { get; set; }
-        private static ConfigEntry<double> ConfigBombStackingDamage { get; set; }
-        private static ConfigEntry<int> ConfigBombCap { get; set; }
-        private static ConfigEntry<double> ConfigBombStackingCap { get; set; }
-        private static ConfigEntry<double> ConfigBombRange { get; set; }
-        private static ConfigEntry<double> ConfigBombStackingRange { get; set; }
+        public static ConfigEntry<double> ConfigBombCreationRate { get; set; }
+        public static ConfigEntry<double> ConfigBombCreationStackingMultiplier { get; set; }
+        public static ConfigEntry<double> ConfigBombCreationStackingAdder { get; set; }
+        public static ConfigEntry<double> ConfigBombDamage { get; set; }
+        public static ConfigEntry<double> ConfigBombStackingDamage { get; set; }
+        public static ConfigEntry<int> ConfigBombCap { get; set; }
+        public static ConfigEntry<double> ConfigBombStackingCap { get; set; }
+        public static ConfigEntry<double> ConfigBombRange { get; set; }
+        public static ConfigEntry<double> ConfigBombStackingRange { get; set; }
 
         #endregion
 
         #region transform time
-        private static ConfigEntry<int> ConfigStageStartTransform { get; set; }
-        private static ConfigEntry<double> ConfigStageStartTransformStack { get; set; }
-        private static ConfigEntry<double> ConfigTransformTime { get; set; }
-        private static ConfigEntry<double> ConfigTransformTimePerStack { get; set; }
-        private static ConfigEntry<double> ConfigTransformTimeDiminishing { get; set; }
-        private static ConfigEntry<double> ConfigTransformTimeMin { get; set; }
-        private static ConfigEntry<double> ConfigTransformTimeMax { get; set; }
-        private static ConfigEntry<int> ConfigMaxTransformationsPerStage { get; set; }
-        private static ConfigEntry<int> ConfigMaxTransformationsPerStageStacking { get; set; }
+        public static ConfigEntry<int> ConfigStageStartTransform { get; set; }
+        public static ConfigEntry<double> ConfigStageStartTransformStack { get; set; }
+        public static ConfigEntry<double> ConfigTransformTime { get; set; }
+        public static ConfigEntry<double> ConfigTransformTimePerStack { get; set; }
+        public static ConfigEntry<double> ConfigTransformTimeDiminishing { get; set; }
+        public static ConfigEntry<double> ConfigTransformTimeMin { get; set; }
+        public static ConfigEntry<double> ConfigTransformTimeMax { get; set; }
+        public static ConfigEntry<int> ConfigMaxTransformationsPerStage { get; set; }
+        public static ConfigEntry<int> ConfigMaxTransformationsPerStageStacking { get; set; }
         #endregion
 
         #region transform rules
-        private static ConfigEntry<string> ConfigConversionSelectionType { get; set; }
-        private static ConfigEntry<string> ConfigItemsToConvertTo { get; set; }
-        private static ConfigEntry<string> ConfigRarityPriorityList { get; set; }
-        private static ConfigEntry<string> ConfigItemPriorityList { get; set; }
+        public static ConfigEntry<string> ConfigConversionSelectionType { get; set; }
+        public static ConfigEntry<string> ConfigItemsToConvertTo { get; set; }
+        public static ConfigEntry<string> ConfigRarityPriorityList { get; set; }
+        public static ConfigEntry<string> ConfigItemPriorityList { get; set; }
         #endregion
 
         #endregion
 
         #region Items
-        private static ItemDef transformToken;
+        public static ItemDef transformToken;
         #endregion
 
-        //Parsed Rarity:Priority List
-        private static Dictionary<ItemTier, int> parsedRarityPriorityList;
-
-        //Parsed Item:Priority List
-        private static Dictionary<ItemIndex, int> parsedItemPriorityList;
-
-        //Selection mode
-        private static Utils.ConversionSelectionType parsedConversionSelectionType;
-
-        //Items to convert to
-        private static Dictionary<ItemIndex, int> parsedItemConvertToList;
+        public MegalomaniaEgoBehavior megalomaniaEgoBehavior { get; set; }
+        public Utils utils { get; set; }
 
         // The Awake() method is run at the very start when the game is initialized.
         public void Awake()
         {
             Log.Init(Logger);
+            utils = new Utils();
+            megalomaniaEgoBehavior = new MegalomaniaEgoBehavior();
+
             LoadAssets();
             CreateConfig();
 
@@ -144,10 +129,10 @@ namespace MegalomaniaPlugin
             InitItems();
             InitSkills();
 
-            ParseRarityPriorityList();
+            utils.ParseRarityPriorityList();
             //parse items after items have loaded
             On.RoR2.ItemCatalog.SetItemDefs += ItemCatalog_SetItemDefs;
-            ParseConversionSelectionType();
+            utils.ParseConversionSelectionType(); 
 
             //Helper for transform time modality (benthic and timed max)
             //Clears counter for timed max, and does the conversion for benthic
@@ -160,8 +145,7 @@ namespace MegalomaniaPlugin
                 return;
 
             //Override Egocentrism code, haha. Sorry mate.
-            On.RoR2.LunarSunBehavior.FixedUpdate += LunarSunBehavior_FixedUpdate;
-            On.RoR2.LunarSunBehavior.GetMaxProjectiles += LunarSunBehavior_GetMaxProjectiles;
+            megalomaniaEgoBehavior.init(utils);
         }
 
         private void CharacterBody_OnInventoryChanged(On.RoR2.CharacterBody.orig_OnInventoryChanged orig, CharacterBody self)
@@ -169,7 +153,7 @@ namespace MegalomaniaPlugin
             SkillLocator skillLocator = self.skillLocator;
 
             //check for new primary here in case it's enabled partway through a run via another mod
-            if ((bool)skillLocator && ConfigNewPrimary.Value)
+            if ((bool)skillLocator && ConfigPrimaryEnhancement.Value)
             {
                 //prioritize visions of heresy
                 if ((bool)self.inventory && self.inventory.GetItemCount(RoR2Content.Items.LunarPrimaryReplacement) == 0)
@@ -188,173 +172,11 @@ namespace MegalomaniaPlugin
         private void ItemCatalog_SetItemDefs(On.RoR2.ItemCatalog.orig_SetItemDefs orig, ItemDef[] newItemDefs)
         {
             orig(newItemDefs);
-            ParseItemPriorityList();
-            ParseItemConvertToList();
+            utils.ParseItemPriorityList();
+            utils.ParseItemConvertToList();
         }
 
-        private void ParseItemConvertToList()
-        {
-            parsedItemConvertToList = new Dictionary<ItemIndex, int>();
 
-            string[] itemPriority = ConfigItemsToConvertTo.Value.Split(',');
-
-            foreach (string iP in itemPriority)
-            {
-                string[] ItePrio = iP.Split(":");
-                //if there's an incorrect amount of colons, skip
-                if (ItePrio.Length != 2)
-                {
-                    Log.Warning($"(ConvertTo) Invalid amount of colons: `{iP}`");
-                    continue;
-                }
-                string indexString = ItePrio[0].Trim();
-                string priorityString = ItePrio[1].Trim();
-                //if either side of the colon is blank, skip
-                if (indexString.IsNullOrWhiteSpace() || priorityString.IsNullOrWhiteSpace())
-                {
-                    Log.Warning($"(ConvertTo) Invalid empty item or priority: `{iP}`");
-                    continue;
-                }
-                int priority;
-                //if the priority is not an integer, skip
-                if (!int.TryParse(priorityString, out priority))
-                {
-                    Log.Warning($"(ConvertTo) Invalid priority: `{iP}`");
-                    continue;
-                }
-                //if the item is undefined, skip
-                ItemIndex index = ItemCatalog.FindItemIndex(indexString);
-                if (index == ItemIndex.None)
-                {
-                    Log.Warning($"(ConvertTo) Invalid item: `{iP}`");
-                    continue;
-                }
-                //if the rarity is already in the list, skip
-                if (parsedItemConvertToList.ContainsKey(index))
-                {
-                    Log.Warning($"(ConvertTo) Item already in list: `{iP}`");
-                    continue;
-                }
-                parsedItemConvertToList.Add(index, priority);
-                Log.Info($"(ConvertTo) Item:Priority added! `{iP}`");
-            }
-        }
-
-        private void ParseConversionSelectionType()
-        {
-            string toTest = ConfigConversionSelectionType.Value.Trim().ToLower();
-            if (Enum.TryParse(toTest, out Utils.ConversionSelectionType conversionType))
-            {
-                parsedConversionSelectionType = conversionType;
-                return;
-            }
-
-            Log.Warning($"Invalid conversion selection type: `{toTest}`. Defaulting to weighted.");
-            parsedConversionSelectionType = Utils.ConversionSelectionType.weighted;
-            return;
-        }
-
-        private void ParseRarityPriorityList()
-        {
-            parsedRarityPriorityList = new Dictionary<ItemTier, int>();
-
-            string[] rarityPriority = ConfigRarityPriorityList.Value.Split(',');
-            
-            foreach (string rP in rarityPriority)
-            {
-                string[] Rapier = rP.Split(":");
-                //if there's an incorrect amount of colons, skip
-                if (Rapier.Length != 2)
-                {
-                    Log.Warning($"(Rarity:Priority) Invalid amount of colons: `{rP}`");
-                    continue;
-                }
-                string tierString = Rapier[0].Trim().ToLower();
-                string priorityString = Rapier[1].Trim();
-                //if either side of the colon is blank, skip
-                if (tierString.IsNullOrWhiteSpace() || priorityString.IsNullOrWhiteSpace())
-                {
-                    Log.Warning($"(Rarity:Priority) Invalid empty tier or priority: `{rP}`");
-                    continue;
-                }
-                int priority;
-                //if the priority is not an integer, skip
-                if (!int.TryParse(priorityString, out priority) || priority < 0)
-                {
-                    Log.Warning($"(Rarity:Priority) Invalid priority: `{rP}`");
-                    continue;
-                }
-                //if the rarity is undefined, skip
-                if (!Enum.TryParse(tierString, out Utils.ItemTierLookup tier))
-                {
-                    Log.Warning($"(Rarity:Priority) Invalid rarity: `{rP}`");
-                    continue;
-                }
-                //if the priority is 0, skip
-                if (priority == 0)
-                {
-                    Log.Info($"(Rarity:Priority) Blacklisting Rarity:Priority! '{rP}'");
-                    continue;
-                }
-                ItemTier rarity = (ItemTier)tier;
-                //if the rarity is already in the list, skip
-                if (parsedRarityPriorityList.ContainsKey(rarity))
-                {
-                    Log.Warning($"(Rarity:Priority) Rarity already in list: `{rP}`");
-                    continue;
-                }
-                parsedRarityPriorityList.Add(rarity, priority);
-                Log.Info($"(Rarity:Priority) Rarity:Priority added! `{rP}`");
-            }
-        }
-
-        private void ParseItemPriorityList()
-        {
-            parsedItemPriorityList = new Dictionary<ItemIndex, int>();
-
-            string[] itemPriority = ConfigItemPriorityList.Value.Split(',');
-
-            foreach (string iP in itemPriority)
-            {
-                string[] ItePrio = iP.Split(":");
-                //if there's an incorrect amount of colons, skip
-                if (ItePrio.Length != 2)
-                {
-                    Log.Warning($"(Item:Priority) Invalid amount of colons: `{iP}`");
-                    continue;
-                }
-                string indexString = ItePrio[0].Trim();
-                string priorityString = ItePrio[1].Trim();
-                //if either side of the colon is blank, skip
-                if (indexString.IsNullOrWhiteSpace() || priorityString.IsNullOrWhiteSpace())
-                {
-                    Log.Warning($"(Item:Priority) Invalid empty item or priority: `{iP}`");
-                    continue;
-                }
-                int priority;
-                //if the priority is not an integer, skip
-                if (!int.TryParse(priorityString, out priority))
-                {
-                    Log.Warning($"(Item:Priority) Invalid priority: `{iP}`");
-                    continue;
-                }
-                //if the item is undefined, skip
-                ItemIndex index = ItemCatalog.FindItemIndex(indexString);
-                if (index == ItemIndex.None)
-                {
-                    Log.Warning($"(Item:Priority) Invalid item: `{iP}`");
-                    continue;
-                }
-                //if the rarity is already in the list, skip
-                if (parsedItemPriorityList.ContainsKey(index))
-                {
-                    Log.Warning($"(Item:Priority) Item already in list: `{iP}`");
-                    continue;
-                }
-                parsedItemPriorityList.Add(index, priority);
-                Log.Info($"(Item:Priority) Item:Priority added! `{iP}`");
-            }
-        }
 
         private void InitItems()
         {
@@ -391,8 +213,7 @@ namespace MegalomaniaPlugin
                "If true, skips the hook to override Egocentrism's behavior:\n" +
                "Disables all bomb stat and transformation over time changes.\n" +
                "Other features, including stats (eg. max health), will still work.\n" +
-               "Transformation on stage start will still work.\n" +
-               "Changing requires a restart.");
+               "Transformation on stage start will still work.");
 
             #region Stats
             // STATS
@@ -439,10 +260,16 @@ namespace MegalomaniaPlugin
                 "Should bombs be generated over time at all?");
             ConfigBombStacking = Config.Bind("4. Bombs - Toggles", "Bomb Stacking", false,
                "If true, the amount of bombs currently orbiting the player is used instead of the amount of Egocentrism, for stacking calculations of player stats.");
-            ConfigNewPrimary = Config.Bind("4. Bombs - Toggles", "Egocentrism Primary", false,
-                "If true, Egocentrism replaces the primary skill with Conceit unless you have Visions of Heresy.");
+            ConfigPrimaryReplacement = Config.Bind("4. Bombs - Toggles", "Egocentrism Primary REPLACEMENT", false,
+                "If true, holding Egocentrism replaces the primary skill with Conceit unless you have Visions of Heresy.");
+            ConfigPrimaryEnhancement = Config.Bind("4. Bombs - Toggles", "Egocentrism Primary Enhancement", false,
+                "If true, Egocentrism enhances your primary skill by firing Egocentrism bombs at enemies within 30 degrees of view.\n" +
+                "Comparable to Shuriken.");
             ConfigPassiveBombAttack = Config.Bind("4. Bombs - Toggles", "Passive Bomb Attack", true,
                 "Whether the vanilla seeking behavior should apply. If a bomb collides with an enemy, it might still explode.");
+            /*ConfigOnHitBombAttack = Config.Bind("4. Bombs - Toggles", "On Hit: Bombs Attack", false,
+                "If true, then any damage done against an enemy will also target an Egocentrism bomb at that enemy.\n" +
+                "It doesn't care about proc coefficient (unless it's zero), but can't proc itself.");*/
             //Stats
             ConfigBombCreationRate = Config.Bind("5. Bombs - Stats", "Initial Bomb Creation Rate", 3.0,
                 "How many seconds it takes to generate a bomb at stack size 1.");
@@ -580,16 +407,16 @@ namespace MegalomaniaPlugin
                         args.baseRegenAdd += count * (float)ConfigRegenPerStack.Value;
 
                         //movement speed
-                        args.baseMoveSpeedAdd += determineStatBoost(ConfigMovementSpeedType.Value, (float)ConfigMovementSpeedPerStack.Value, (float)ConfigMovementSpeedBonusCap.Value, count);
+                        args.baseMoveSpeedAdd += utils.determineStatBoost(ConfigMovementSpeedType.Value, (float)ConfigMovementSpeedPerStack.Value, (float)ConfigMovementSpeedBonusCap.Value, count);
 
                         //damage
                         args.baseDamageAdd += count * (float)ConfigDamagePerStack.Value;
 
                         //attack speed
-                        args.attackSpeedMultAdd += determineStatBoost(ConfigAttackSpeedType.Value, (float)ConfigAttackSpeedPerStack.Value, (float)ConfigAttackSpeedBonusCap.Value, count);
+                        args.attackSpeedMultAdd += utils.determineStatBoost(ConfigAttackSpeedType.Value, (float)ConfigAttackSpeedPerStack.Value, (float)ConfigAttackSpeedBonusCap.Value, count);
 
                         //crit chance
-                        args.critAdd += count * (float)ConfigCritChancePerStack.Value;
+                        args.critAdd += 100 * count * (float)ConfigCritChancePerStack.Value;
 
                         //armor
                         float calcArmor = count * (float)ConfigArmorPerStack.Value;
@@ -601,327 +428,6 @@ namespace MegalomaniaPlugin
             };
         }
 
-        private float determineStatBoost(bool diminishing, float perStack, float max, float stacksize)
-        {
-            if (max == 0)
-                //no buff
-                return 0f;
-            else if (diminishing)
-                //diminishing returns
-                return max - max * (float)Math.Pow(1f - (perStack / max), stacksize);
-            else if (max > 0)
-                //capped linear
-                return Math.Min(perStack * stacksize, max);
-            else
-                //uncapped linear
-                return perStack * stacksize;
-        }
-
-        private void LunarSunBehavior_FixedUpdate(On.RoR2.LunarSunBehavior.orig_FixedUpdate orig, LunarSunBehavior self)
-        {
-            //Grab private variables first, makes the code readable
-            CharacterBody body = self.GetFieldValue<CharacterBody>("body");
-            GameObject projectilePrefab = self.GetFieldValue<GameObject>("projectilePrefab");
-            int stack = self.GetFieldValue<int>("stack");
-            float projectileTimer = self.GetFieldValue<float>("projectileTimer");
-            float transformTimer = self.GetFieldValue<float>("transformTimer");
-            Xoroshiro128Plus transformRng = self.GetFieldValue<Xoroshiro128Plus>("transformRng");
-            projectileTimer += Time.fixedDeltaTime;
-
-            if ((bool)projectilePrefab && projectilePrefab != null && ConfigEnableBombs.Value)
-                handleBombs(body, ref projectileTimer, stack, projectilePrefab);
-
-            if (ConfigTransformTime.Value >= 0)
-                handleTransUpdate(body, ref transformTimer, stack, transformRng);
-
-            self.SetFieldValue("projectileTimer", projectileTimer);
-            self.SetFieldValue("transformTimer", transformTimer);
-        }
-
-        private int LunarSunBehavior_GetMaxProjectiles(On.RoR2.LunarSunBehavior.orig_GetMaxProjectiles orig, Inventory inventory)
-        {
-            return (int)(ConfigBombCap.Value + (inventory.GetItemCount(DLC1Content.Items.LunarSun) - 1) * ConfigBombStackingCap.Value);
-        }
-
-        private void handleBombs(CharacterBody body, ref float projectileTimer, int stack, GameObject projectilePrefab)
-        {
-            float denominator = (float)(stack - 1) * (float)ConfigBombCreationStackingMultiplier.Value + 1;
-            if (!body.master.IsDeployableLimited(DeployableSlot.LunarSunBomb) &&
-                projectileTimer > ConfigBombCreationRate.Value / denominator + ConfigBombCreationStackingAdder.Value * stack)
-            {
-                projectileTimer = 0f;
-
-                ProjectileSphereTargetFinder targetFinder = projectilePrefab.GetComponent<ProjectileSphereTargetFinder>();
-                if (targetFinder)
-                {
-                    if (ConfigPassiveBombAttack.Value)
-                        targetFinder.lookRange = (float)(ConfigBombRange.Value + (ConfigBombStackingRange.Value * (stack - 1)));
-                    else
-                        targetFinder.lookRange = 0;
-                }
-                else
-                    Log.Error("LunarSunBehavior: Unable to modify projectile Range (ProjectileSphereTargetFinder component not found)");
-
-                FireProjectileInfo fireProjectileInfo = default(FireProjectileInfo);
-                fireProjectileInfo.projectilePrefab = projectilePrefab;
-                fireProjectileInfo.crit = body.RollCrit();
-                fireProjectileInfo.damage = body.damage * (float)(ConfigBombDamage.Value + ConfigBombStackingDamage.Value * stack);
-                fireProjectileInfo.damageColorIndex = DamageColorIndex.Item;
-                fireProjectileInfo.force = 0f;
-                fireProjectileInfo.owner = body.gameObject;
-                fireProjectileInfo.position = body.transform.position;
-                fireProjectileInfo.rotation = Quaternion.identity;
-                ProjectileManager.instance.FireProjectile(fireProjectileInfo);
-                if (ConfigBombStacking.Value)
-                {
-                    body.statsDirty = true;
-                    //DamageInfo damageInfo = new DamageInfo();
-                    //damageInfo.damage = (float)ConfigMaxHealthPerStack.Value;
-                    //damageInfo.damageType = DamageType.Silent;
-                    //body.healthComponent.TakeDamage(damageInfo);
-                }
-            }
-        }
-
-        private void handleTransUpdate(CharacterBody body, ref float transformTimer, int stack, Xoroshiro128Plus transformRng)
-        {
-            //with acceptance
-            transformTimer += Time.fixedDeltaTime;
-            double calcTimer = ConfigTransformTime.Value * Math.Pow(ConfigTransformTimeDiminishing.Value, stack) + stack * ConfigTransformTimePerStack.Value;
-
-            calcTimer = Math.Min(calcTimer, ConfigTransformTimeMax.Value);
-            calcTimer = Math.Max(calcTimer, ConfigTransformTimeMin.Value);
-
-            //if the timer's not up, stop
-            if (transformTimer <= calcTimer)
-            {
-                return;
-            }
-            transformTimer = 0f;
-            //if something is null, stop
-            if (!body.master || !body.inventory)
-            {
-                return;
-            }
-            //if exceeds max items already converted, stop
-            if (ConfigMaxTransformationsPerStage.Value > 0
-                && body.inventory.GetItemCount(transformToken) >= ConfigMaxTransformationsPerStage.Value + (stack - 1) * ConfigMaxTransformationsPerStageStacking.Value)
-            {
-                return;
-            }
-
-            TransformItems(body.inventory, 1, transformRng, body.master);
-        }
-
-        private void TransformItems(Inventory inventory, int amount, Xoroshiro128Plus transformRng, CharacterMaster master)
-        {
-            if (!NetworkServer.active)
-            {
-                Log.Warning("[Server] function 'TransformItems' called on client");
-                return;
-            }
-
-            if (!inventory || !master)
-                return;
-
-            if (amount < 1)
-                return;
-
-            if (parsedItemConvertToList.Count < 1)
-            {
-                return;
-            }
-
-            if (transformRng == null)
-            {
-                ulong seed = Run.instance.seed ^ (ulong)Run.instance.stageClearCount;
-                transformRng = new Xoroshiro128Plus(seed);
-            }
-
-            Dictionary<ItemIndex, int> weightedInventory = weighInventory(inventory);
-
-            int i = amount * weightedInventory.Count;
-            int g = 0;
-              
-            while (amount > 0 && weightedInventory.Count > 0 && i > 0)
-            {
-                //just in case something goes wrong, don't loop forever
-                i--;
-
-                //shuffle
-                ItemIndex toTransform = ItemIndex.None;
-                //modality select item to transform
-                switch (parsedConversionSelectionType)
-                {
-                    case Utils.ConversionSelectionType.weighted:
-                        toTransform = getWeightedDictKey(weightedInventory, transformRng);
-                        break;
-                    case Utils.ConversionSelectionType.priority:
-                        toTransform = getPriorityDictKey(weightedInventory, transformRng);
-                        break;
-                }
-
-                if (toTransform == ItemIndex.None)
-                {
-                    Log.Error("Egocentrism tried to convert an item but something went wrong. Did you forget to add an enum or function?\n" +
-                        $"parsedConversionSelectionType: '{parsedConversionSelectionType}'");
-                    return;
-                }
-
-                List<ItemIndex> toGiveList = getWeightedDictKeyAndBackup(parsedItemConvertToList, transformRng);
-
-                //do the thing
-                ItemIndex toGive = ItemIndex.None;
-                foreach (ItemIndex corruptor in toGiveList)
-                {
-                    //don't convert something into itself
-                    if (toTransform != corruptor)
-                    {
-                        toGive = corruptor;
-                        break;
-                    }
-                }
-
-                //no valid targets to be transformed into were found.
-                //perhaps egocentrism convert to list only contains 1 item?
-                if (toGive == ItemIndex.None)
-                {
-                    g++;
-                    if (g >= weightedInventory.Count)
-                    {
-                        return;
-                    }
-                    continue;
-                }
-
-                inventory.RemoveItem(toTransform);
-                inventory.GiveItem(toGive);
-
-                //balance transformation over time
-                inventory.GiveItem(transformToken, 1 + ConfigMaxTransformationsPerStageStacking.Value);
-
-                //inform owner that ego happened
-                CharacterMasterNotificationQueue.SendTransformNotification(master, toTransform, toGive, CharacterMasterNotificationQueue.TransformationType.LunarSun);
-
-                //remove item from possible selections if it no longer exists
-                if (inventory.GetItemCount(toTransform) < 1)
-                {
-                    weightedInventory.Remove(toTransform);
-                }
-
-                amount--;
-            }
-        }
-
-        private static Dictionary<ItemIndex, int> weighInventory(Inventory inventory)
-        {
-            List<ItemIndex> inventoryItemsList = new List<ItemIndex>(inventory.itemAcquisitionOrder);
-
-            Dictionary<ItemIndex, int> weightedInventory = new Dictionary<ItemIndex, int>();
-            foreach (ItemIndex itemIndex in inventoryItemsList)
-            {
-                //don't convert egocentrism
-                if (itemIndex == DLC1Content.Items.LunarSun.itemIndex)
-                {
-                    continue;
-                }
-                //don't convert things that don't exist
-                ItemDef itemDef = ItemCatalog.GetItemDef(itemIndex);
-                if (!(bool)itemDef)
-                {
-                    continue;
-                }
-                //don't convert untiered items
-                if (itemDef.tier == ItemTier.NoTier)
-                {
-                    continue;
-                }
-                //get tier weight
-                int weight = 0;
-                if (!parsedRarityPriorityList.TryGetValue(itemDef.tier, out weight))
-                {
-                    weight = 0;
-                }
-                //don't convert blacklisted items
-                int itemWeight = 0;
-                if (parsedItemPriorityList.TryGetValue(itemIndex, out itemWeight) && itemWeight == 0)
-                {
-                    continue;
-                }
-                weight += itemWeight;
-                //discard combination blacklisted items
-                if (weight <= 0)
-                {
-                    continue;
-                }
-
-                //allow item transform
-                weightedInventory.Add(itemIndex, weight);
-            }
-            return weightedInventory;
-        }
-
-        private static List<T> getWeightedDictKeyAndBackup<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
-        {
-            Dictionary<T, int> copy = new Dictionary<T, int>();
-            foreach (var kvp in dict)
-            {
-                copy.Add(kvp.Key, kvp.Value);
-            }
-
-            List<T> list = new List<T>();
-            for (int i = 0; i < dict.Count && i < 2; i++)
-            {
-                T key = getWeightedDictKey(copy, rng);
-                list.Add(key);
-                copy.Remove(key);
-            }
-            list.Reverse();
-            return list;
-        }
-
-        private static T getPriorityDictKey<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
-        {
-            int highestFound = 0;
-            List<T> highestTsFound = new List<T>();
-            foreach (var v in dict)
-            {
-                if (v.Value == highestFound)
-                {
-                    highestTsFound.Add(v.Key);
-                    continue;
-                }
-                if (v.Value > highestFound)
-                {
-                    highestFound = v.Value;
-                    highestTsFound.Clear();
-                    highestTsFound.Add(v.Key);
-                }
-            }
-            return highestTsFound[rng.RangeInt(0, highestTsFound.Count)];
-        }
-
-        private static T getWeightedDictKey<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
-        {
-            int totalWeight = 0;
-            foreach (var weight in dict.Values)
-            {
-                totalWeight += weight;
-            }
-
-            int randomNumber = rng.RangeInt(0, totalWeight);
-            foreach (var kvp in dict)
-            {
-                randomNumber -= kvp.Value;
-                if (randomNumber < 0)
-                {
-                    return kvp.Key;
-                }
-            }
-
-            Log.Error("Couldn't return a random weighted dictionary key! This shouldn't happen if all weights are positive. Returned FirstOrDefault() instead.");
-            return dict.FirstOrDefault().Key;
-        }
 
         [Server]
         private void CharacterMaster_OnServerStageBegin(On.RoR2.CharacterMaster.orig_OnServerStageBegin orig, CharacterMaster self, Stage stage)
@@ -949,7 +455,7 @@ namespace MegalomaniaPlugin
                 {
                     amount = Math.Min(amount, ConfigMaxTransformationsPerStage.Value);
                 }
-                TransformItems(inventory, amount, null, self);
+                utils.TransformItems(inventory, amount, null, self);
             }
         }
 
