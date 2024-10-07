@@ -4,6 +4,7 @@
 - Added Convert To configurable property
 - Added Conversion Selection Type configurable property
 - Added Minimum Time configurable property
+- Added Primary Replacement configurable property
 - Added Primary Enhancement configurable property
 - Migrated Benthic-like transformation to its own properties
 - Adjust default weights for a larger difference and a higher focus on void items
@@ -13,6 +14,8 @@
 - Buff default bomb range (15 -> 17.5)
 - Nerf default stacking bomb range (1 -> 0.5)
 - Default multiplier per stack (0.9 -> 1)
+- Internally, things may be a bit more *"oh god"* but it works on my device
+- Swapped ordering of changelog so most recent is on top
 
 ## 0.1.1
 

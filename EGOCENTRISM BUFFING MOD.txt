@@ -34,6 +34,12 @@ Config Options:
 (bool)  Bomb Generation Enabled: true
 	= If false, disables bombs completely
 
+PASSIVE EGO: Perfection: Convert half of health to shields.
+
+SECONDARY EGO: ???: Fire 6 lunargolem bombs. 5s cooldown.
+UTILITY EGO: ???: Shell. Idk what that does but i saw the state for lunargolem.
+SPECIAL EGO: Monopolize: Crush a few items (configurable) and gain more Egocentrism than the amount of items you lost. 30s cooldown.
+
 (float) Bomb Creation Initial Rate (IR): 3 seconds
 (float) Bomb Creation Stacking Rate Multiplier (SRM): 0.75
 (float) Bomb Creation Stacking Rate Subtractor (SRS): 0
@@ -62,7 +68,6 @@ Config Options:
 (bool)  Regenerating Ego: false
 	= If true, then regenerating scrap that gets absorbed into Egocentrism is consumed instead of destroyed
 
-//TODO CHANGE RANDOMLY LUNAR TO A WEIGHTED LIST OF ACCEPTABLE ITEMS TO TRANSFORM INTO
 Conversion Type: EGOCENTRISM
 	EGOCENTRISM
 		-items are converted to egocentrism
