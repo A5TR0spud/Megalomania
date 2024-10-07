@@ -1,4 +1,8 @@
 
+## 1.1.0
+
+- Adjust sprite of Conceit
+
 ## 1.0.1
 
 - Fix primary replacement config using wrong option (enhancement)

@@ -33,7 +33,7 @@ namespace MegalomaniaPlugin
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "A5TR0spud";
         public const string PluginName = "Megalomania";
-        public const string PluginVersion = "1.0.1";
+        public const string PluginVersion = "1.1.0";
 
         public static AssetBundle megalomaniaAssetBundle;
         public static Sprite EgoPrimarySprite;
@@ -165,7 +165,7 @@ namespace MegalomaniaPlugin
         private void LoadAssets() {
             megalomaniaAssetBundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location), "AssetBundles", "megalomaniaassets"));
 
-            EgoPrimarySprite = megalomaniaAssetBundle.LoadAsset<Sprite>("ego_primary_replacement_icon_5");
+            EgoPrimarySprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texConceitIcon");
         }
 
         private void ItemCatalog_SetItemDefs(On.RoR2.ItemCatalog.orig_SetItemDefs orig, ItemDef[] newItemDefs)
