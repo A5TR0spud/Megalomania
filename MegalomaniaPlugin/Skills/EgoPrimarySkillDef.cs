@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace MegalomaniaPlugin
+namespace MegalomaniaPlugin.Skills
 {
     internal class EgoPrimarySkillDef : SkillDef
     {

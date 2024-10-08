@@ -15,14 +15,14 @@ using UnityEngine;
 using UnityEngine.Networking;
 using static UnityEngine.ParticleSystem.PlaybackState;
 
-namespace MegalomaniaPlugin
+namespace MegalomaniaPlugin.Skills
 {
     public class ConceitAbility : BaseSkillState
     {
         public static float baseDuration = 1f;
         public static float burstShotsPerSecond = 8f;
         public static int shotsPerBurst = 3;
-        public static float baseBurstDuration = (float)shotsPerBurst / burstShotsPerSecond;
+        public static float baseBurstDuration = shotsPerBurst / burstShotsPerSecond;
         private float burstDuration;
         private int shotsFiredInBurst = 0;
         private float duration;
@@ -70,11 +70,11 @@ namespace MegalomaniaPlugin
         public override void OnEnter()
         {
             base.OnEnter();
-            this.duration = baseDuration / base.attackSpeedStat;
-            this.burstDuration = baseBurstDuration / base.attackSpeedStat;
+            duration = baseDuration / attackSpeedStat;
+            burstDuration = baseBurstDuration / attackSpeedStat;
             shotsFiredInBurst = 0;
-            Ray aimRay = base.GetAimRay();
-            base.StartAimMode(aimRay, 2f, false);
+            Ray aimRay = GetAimRay();
+            StartAimMode(aimRay, 2f, false);
 
             //Chat.AddMessage("conceit fired");
 
@@ -89,23 +89,23 @@ namespace MegalomaniaPlugin
         public override void FixedUpdate()
         {
             base.FixedUpdate();
-            int num = Mathf.FloorToInt(base.fixedAge / burstDuration * (float)shotsPerBurst);
+            int num = Mathf.FloorToInt(fixedAge / burstDuration * shotsPerBurst);
             if (shotsFiredInBurst <= num && shotsFiredInBurst < shotsPerBurst)
             {
                 fire();
-                
+
                 shotsFiredInBurst++;
             }
-            if (base.fixedAge >= this.duration && base.isAuthority)
+            if (fixedAge >= duration && isAuthority)
             {
-                this.outer.SetNextStateToMain();
+                outer.SetNextStateToMain();
                 return;
             }
         }
 
         public void fire()
         {
-            Ray aimRay = base.GetAimRay();
+            Ray aimRay = GetAimRay();
 
             /*if ((bool)muzzleFlashPrefab)
             {
@@ -120,8 +120,8 @@ namespace MegalomaniaPlugin
             }*/
             //TrajectoryAimAssist.ApplyTrajectoryAimAssist(ref aimRay, projectilePrefab, base.gameObject, 50);
             Vector3 forward = Util.ApplySpread(aimRay.direction, 0f, 1f, 1f, 0.5f);
-            Util.PlayAttackSpeedSound("Play_lunar_exploder_m1_fire", base.gameObject, attackSpeedStat);
-            ProjectileManager.instance.FireProjectile(projectilePrefab, aimRay.origin, Util.QuaternionSafeLookRotation(forward), base.gameObject, damageStat * damageCoefficient, force, RollCrit(), speedOverride: 150);
+            Util.PlaySound("Play_lunar_exploder_m1_fire", gameObject);//, attackSpeedStat);
+            ProjectileManager.instance.FireProjectile(projectilePrefab, aimRay.origin, Util.QuaternionSafeLookRotation(forward), gameObject, damageStat * damageCoefficient, force, RollCrit(), speedOverride: 150);
         }
 
         public override InterruptPriority GetMinimumInterruptPriority()

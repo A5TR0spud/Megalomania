@@ -2,6 +2,8 @@
 ## 1.1.0
 
 - Added Stack Size Matters and 2 related configurable properties
+- Migrated Primary Replacement to new section *(7.1 Skills - Primary)*
+- Rename Primary Enhancement -> Primary Targetting
 - Adjust sprite of Conceit
 - Conceit now fires in a burst of 3 at a base rate of 8/s
 - Conceit has a base burst per second rate of 1/s

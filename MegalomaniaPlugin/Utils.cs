@@ -1,11 +1,15 @@
 ﻿using BepInEx;
+using MegalomaniaPlugin.Skills;
 using RoR2;
+using RoR2.Skills;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.UI;
+using UnityEngine.UIElements;
 
 namespace MegalomaniaPlugin
 {
@@ -59,6 +63,38 @@ namespace MegalomaniaPlugin
         {
             weighted = 0,
             priority = 1
+        }
+
+        private Dictionary<string, SkillDef> SkillLookup { get; set; }
+
+        public void init()
+        {
+            SkillLookup = new Dictionary<string, SkillDef>();
+            SkillLookup.Add("conceit", ConceitAbility.ConceitSkill);
+        }
+
+#nullable enable
+        public SkillDef? lookupSkill(string str)
+        {
+            if (SkillLookup.TryGetValue(str.ToLower().Trim(), out SkillDef sdef))
+            {
+                return sdef;
+            }
+            return null;
+        }
+#nullable restore
+
+        public void CorruptItem(Inventory inventory, ItemIndex toCorrupt, CharacterMaster master)
+        {
+            int ego = inventory.GetItemCount(DLC1Content.Items.LunarSun);
+            if (ego < 1) return;
+            int count = inventory.GetItemCount(toCorrupt);
+            if (count > 0)
+            {
+                inventory.RemoveItem(toCorrupt, count);
+                inventory.GiveItem(DLC1Content.Items.LunarSun, count);
+                CharacterMasterNotificationQueue.SendTransformNotification(master, toCorrupt, DLC1Content.Items.LunarSun.itemIndex, CharacterMasterNotificationQueue.TransformationType.LunarSun);
+            }
         }
 
         public void TransformItems(Inventory inventory, int amount, Xoroshiro128Plus transformRng, CharacterMaster master)

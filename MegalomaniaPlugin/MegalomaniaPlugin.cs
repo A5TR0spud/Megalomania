@@ -1,5 +1,7 @@
 using BepInEx;
 using BepInEx.Configuration;
+using IL.RoR2.Skills;
+using MegalomaniaPlugin.Skills;
 using R2API;
 using R2API.Utils;
 using RoR2;
@@ -66,7 +68,6 @@ namespace MegalomaniaPlugin
         #region bomb toggles
         public static ConfigEntry<bool> ConfigEnableBombs { get; set; }
         public static ConfigEntry<bool> ConfigBombStacking { get; set; }
-        public static ConfigEntry<bool> ConfigPrimaryReplacement { get; set; }
         public static ConfigEntry<bool> ConfigPrimaryEnhancement { get; set; }
         public static ConfigEntry<bool> ConfigPassiveBombAttack { get; set; }
         //public static ConfigEntry<bool> ConfigOnHitBombAttack { get; set; }
@@ -107,6 +108,13 @@ namespace MegalomaniaPlugin
         public static ConfigEntry<string> ConfigItemPriorityList { get; set; }
         #endregion
 
+        #region skills
+        public static ConfigEntry<string> ConfigSkillsInfo { get; set; }
+        public static ConfigEntry<string> ConfigPrimarySkill {  get; set; }
+        public static ConfigEntry<bool> ConfigPrimaryReplacement { get; set; }
+        public static ConfigEntry<bool> ConfigCorruptVisions { get; set; }
+        #endregion
+
         #endregion
 
         #region Items
@@ -131,6 +139,7 @@ namespace MegalomaniaPlugin
 
             InitItems();
             InitSkills();
+            utils.init();
 
             utils.ParseRarityPriorityList();
             //parse items after items have loaded
@@ -155,11 +164,17 @@ namespace MegalomaniaPlugin
         {
             SkillLocator skillLocator = self.skillLocator;
 
-            if ((bool)skillLocator && ConfigPrimaryReplacement.Value)
+            RoR2.Skills.SkillDef primarySkillRep = utils.lookupSkill(ConfigPrimarySkill.Value);
+
+            if ((bool)self.master && (bool)self.inventory && (bool)skillLocator && ConfigPrimaryReplacement.Value && primarySkillRep)
             {
-                //prioritize visions of heresy
-                if ((bool)self.inventory && self.inventory.GetItemCount(RoR2Content.Items.LunarPrimaryReplacement) == 0)
-                    self.ReplaceSkillIfItemPresent(skillLocator.primary, DLC1Content.Items.LunarSun.itemIndex, ConceitAbility.ConceitSkill);
+                if (ConfigCorruptVisions.Value)
+                {
+                    utils.CorruptItem(self.inventory, RoR2Content.Items.LunarPrimaryReplacement.itemIndex, self.master);
+                    self.ReplaceSkillIfItemPresent(skillLocator.primary, DLC1Content.Items.LunarSun.itemIndex, primarySkillRep);
+                }
+                else if (self.inventory.GetItemCount(RoR2Content.Items.LunarPrimaryReplacement) == 0)
+                    self.ReplaceSkillIfItemPresent(skillLocator.primary, DLC1Content.Items.LunarSun.itemIndex, primarySkillRep);
             }
 
             orig(self);
@@ -262,11 +277,9 @@ namespace MegalomaniaPlugin
                 "Should bombs be generated over time at all?");
             ConfigBombStacking = Config.Bind("4. Bombs - Toggles", "Bomb Stacking", false,
                "If true, the amount of bombs currently orbiting the player is used instead of the amount of Egocentrism, for stacking calculations of player stats.");
-            ConfigPrimaryReplacement = Config.Bind("4. Bombs - Toggles", "Egocentrism Primary REPLACEMENT", false,
-                "If true, holding Egocentrism replaces the primary skill with Conceit unless you have Visions of Heresy.");
-            ConfigPrimaryEnhancement = Config.Bind("4. Bombs - Toggles", "Egocentrism Primary Enhancement", false,
+            ConfigPrimaryEnhancement = Config.Bind("4. Bombs - Toggles", "Egocentrism Primary Targetting", false,
                 "If true, Egocentrism enhances your primary skill by firing Egocentrism bombs at enemies within 30 degrees of view.\n" +
-                "Comparable to Shuriken.");
+                "Comparable in activation to Shuriken.");
             ConfigPassiveBombAttack = Config.Bind("4. Bombs - Toggles", "Passive Bomb Attack", true,
                 "Whether the vanilla seeking behavior should apply. If a bomb collides with an enemy, it might still explode.");
             /*ConfigOnHitBombAttack = Config.Bind("4. Bombs - Toggles", "On Hit: Bombs Attack", false,
@@ -390,6 +403,20 @@ namespace MegalomaniaPlugin
                 "Case sensitive, somewhat whitespace sensitive.\n" +
                 "The diplay name might not always equal the codename of the item.\n" +
                 "For example: Wax Quail = JumpBoost. To find the name out for yourself, download the DebugToolkit mod, open the console (ctrl + alt + backtick (`)) and type in \"list_item\"");
+            #endregion
+
+            #region Skills
+            ConfigSkillsInfo = Config.Bind("7.0 Skills - All", "Skill Info", ":)",
+            "Ignored. This is for information on what skills do.\n" +
+            "Conceit: Fire a burst of 3 lunar shards for 3x90% damage.");
+            ConfigPrimarySkill = Config.Bind("7.1 Skills - Primary", "Skill to Use", "conceit",
+                "What skill to replace primary with.\n" +
+                "Allowed values: conceit");
+            ConfigPrimaryReplacement = Config.Bind("7.1 Skills - Primary", "Enable Primary Replacement", false,
+                "If true, holding Egocentrism replaces the primary skill.");
+            ConfigCorruptVisions = Config.Bind("7.1 Skills - Primary", "Corrupt Visions of Heresy", true,
+                "If true, Visions of Heresy is corrupted into Egocentrism.\n" +
+                "If false, Visions of Heresy's \"Hungering Gaze\" skill overrides Ego skill replacement.");
             #endregion
 
             ConfigCleanup();
