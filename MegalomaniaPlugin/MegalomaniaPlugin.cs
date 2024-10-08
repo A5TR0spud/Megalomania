@@ -98,6 +98,9 @@ namespace MegalomaniaPlugin
         #endregion
 
         #region transform rules
+        public static ConfigEntry<bool> ConfigStackSizeMatters {  get; set; }
+        public static ConfigEntry<double> ConfigStackSizeMultiplier { get; set; }
+        public static ConfigEntry<double> ConfigStackSizeAdder { get; set; }
         public static ConfigEntry<string> ConfigConversionSelectionType { get; set; }
         public static ConfigEntry<string> ConfigItemsToConvertTo { get; set; }
         public static ConfigEntry<string> ConfigRarityPriorityList { get; set; }
@@ -332,6 +335,22 @@ namespace MegalomaniaPlugin
                 "The system is intelligent and won't count stacks added by conversion from the current stage.");
 
             //Rules
+            ConfigStackSizeMatters = Config.Bind("6. Transform - Rules", "Stack Size Matters", false,
+                "If true, the weight of the item is multiplied by how many of that item you have.\n" +
+                "Weight Calculation: TierWeight + ItemWeight + Floor(SSMultiplier * ItemWeight * (StackSize - 1) + SSAdder * (StackSize - 1))");
+
+            ConfigStackSizeMultiplier = Config.Bind("6. Transform - Rules", "Stack Size Multiplier", 0.2,
+                "How much to multiply subsequent stacks' weight by when Stack Size Matters is enabled.\n" +
+                "Weight is rounded down after calculating.\n" +
+                "Eg: A weighted item at 10 and a multiplier of 0.5 would stack 10 -> 15 -> 20 -> 25\n" +
+                "Eg: A weighted item at 50 and a multiplier of 0.2 would stack 50 -> 60 -> 70 -> 80");
+
+            ConfigStackSizeAdder = Config.Bind("6. Transform - Rules", "Stack Size Adder", 3.0,
+                "How much to add to weight per subsequent stack when Stack Size Matters is enabled.\n" +
+                "Weight is rounded down after calculating.\n" +
+                "Eg: A weighted item at 10 and an adder of 5 would stack 10 -> 15 -> 20 -> 25\n" +
+                "Eg: A weighted item at 50 and an adder of 0.5 would stack 50 -> 50 (50.5) -> 51 -> 51 (51.5)");
+
             ConfigConversionSelectionType = Config.Bind("6. Transform - Rules", "Conversion Selection Type", "Weighted",
                 "Determines method for choosing items. Case insensitive. Allowed values:\n" +
                 "Weighted: tends towards higher weighted items and tiers but maintains randomness.\n" +
@@ -346,7 +365,7 @@ namespace MegalomaniaPlugin
                 "Format: item1:integer, item2:int, item3:i, etc\n" +
                 "Case sensitive, somewhat whitespace sensitive.\n" +
                 "The diplay name might not always equal the codename of the item.\n" +
-                "For example: Egocentrism = LunarSun. To find the name out for yourself, download the DebugToolkit mod, open the console (ctrl + alt + backtick (`)) and type in \"list_item\"");
+                "Eg: Egocentrism = LunarSun. To find the name out for yourself, download the DebugToolkit mod, open the console (ctrl + alt + backtick (`)) and type in \"list_item\"");
 
             ConfigRarityPriorityList = Config.Bind("6. Transform - Rules", "Rarity:Priority List",
                 "voidyellow:100, voidred:70, voidgreen:60, red:50, yellow:40, voidwhite:35, green:30, white:15, blue:0",

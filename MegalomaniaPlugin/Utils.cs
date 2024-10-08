@@ -151,14 +151,64 @@ namespace MegalomaniaPlugin
                 //inform owner that ego happened
                 CharacterMasterNotificationQueue.SendTransformNotification(master, toTransform, toGive, CharacterMasterNotificationQueue.TransformationType.LunarSun);
 
-                //remove item from possible selections if it no longer exists
+                //remove item from possible selections if it no longer exists, and re-weight it if stack size matters
                 if (inventory.GetItemCount(toTransform) < 1)
                 {
                     weightedInventory.Remove(toTransform);
                 }
+                else if (MegalomaniaPlugin.ConfigStackSizeMatters.Value)
+                {
+                    weightedInventory[toTransform] = weighSingleItem(toTransform, inventory.GetItemCount(toTransform));
+                }
 
                 amount--;
             }
+        }
+
+        public int weighSingleItem(ItemIndex itemIndex, int itemCount)
+        {
+            //don't convert egocentrism
+            if (itemIndex == DLC1Content.Items.LunarSun.itemIndex)
+            {
+                return -1;
+            }
+            //don't convert things that don't exist
+            ItemDef itemDef = ItemCatalog.GetItemDef(itemIndex);
+            if (!(bool)itemDef)
+            {
+                return -1;
+            }
+            //don't convert untiered items
+            if (itemDef.tier == ItemTier.NoTier)
+            {
+                return -1;
+            }
+            //get tier weight
+            int weight = 0;
+            if (!parsedRarityPriorityList.TryGetValue(itemDef.tier, out weight))
+            {
+                weight = 0;
+            }
+            //don't convert blacklisted items
+            int itemWeight = 0;
+            if (parsedItemPriorityList.TryGetValue(itemIndex, out itemWeight) && itemWeight == 0)
+            {
+                return -1;
+            }
+            weight += itemWeight;
+            //discard combination blacklisted items
+            if (weight <= 0)
+            {
+                return -1;
+            }
+            if (MegalomaniaPlugin.ConfigStackSizeMatters.Value)
+            {
+                double toAdd = 0;
+                toAdd += (double)weight * (double)(itemCount - 1.0) * MegalomaniaPlugin.ConfigStackSizeMultiplier.Value;
+                toAdd += (double)(itemCount - 1.0) * MegalomaniaPlugin.ConfigStackSizeAdder.Value;
+                weight += (int)toAdd;
+            }
+            return weight;
         }
 
         public Dictionary<ItemIndex, int> weighInventory(Inventory inventory)
@@ -168,36 +218,7 @@ namespace MegalomaniaPlugin
             Dictionary<ItemIndex, int> weightedInventory = new Dictionary<ItemIndex, int>();
             foreach (ItemIndex itemIndex in inventoryItemsList)
             {
-                //don't convert egocentrism
-                if (itemIndex == DLC1Content.Items.LunarSun.itemIndex)
-                {
-                    continue;
-                }
-                //don't convert things that don't exist
-                ItemDef itemDef = ItemCatalog.GetItemDef(itemIndex);
-                if (!(bool)itemDef)
-                {
-                    continue;
-                }
-                //don't convert untiered items
-                if (itemDef.tier == ItemTier.NoTier)
-                {
-                    continue;
-                }
-                //get tier weight
-                int weight = 0;
-                if (!parsedRarityPriorityList.TryGetValue(itemDef.tier, out weight))
-                {
-                    weight = 0;
-                }
-                //don't convert blacklisted items
-                int itemWeight = 0;
-                if (parsedItemPriorityList.TryGetValue(itemIndex, out itemWeight) && itemWeight == 0)
-                {
-                    continue;
-                }
-                weight += itemWeight;
-                //discard combination blacklisted items
+                int weight = weighSingleItem(itemIndex, inventory.GetItemCount(itemIndex));
                 if (weight <= 0)
                 {
                     continue;
