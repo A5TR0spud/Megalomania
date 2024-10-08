@@ -2,9 +2,12 @@
 ## 1.1.0
 
 - Adjust sprite of Conceit
-- Conceit now fires in a burst of 3 at a base rate of 12/s
-- Conceit has a base "firerate" of 1/s
+- Conceit now fires in a burst of 3 at a base rate of 8/s
+- Conceit has a base burst per second rate of 1/s
 - Nerf Conceit damage: 360% -> 90%
+- Conceit now has spread
+- Conceit now has firing sound effects
+*After testing Conceit with exploder muzzle flash, I've elected it too obstructive to include.*
 
 ## 1.0.1
 

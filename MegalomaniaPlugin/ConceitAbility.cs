@@ -20,16 +20,17 @@ namespace MegalomaniaPlugin
     public class ConceitAbility : BaseSkillState
     {
         public static float baseDuration = 1f;
-        public static float burstShotsPerSecond = 12;
+        public static float burstShotsPerSecond = 8f;
         public static int shotsPerBurst = 3;
         public static float baseBurstDuration = (float)shotsPerBurst / burstShotsPerSecond;
         private float burstDuration;
-        private int shotsLeftInBurst = 0;
+        private int shotsFiredInBurst = 0;
         private float duration;
         public static SkillDef ConceitSkill;
         static float damageCoefficient = 0.9f;
         static float force = 0.1f;
         public static GameObject projectilePrefab;
+        //public static GameObject muzzleFlashPrefab;
 
         public static void initEgoPrimary(Sprite Icon)
         {
@@ -37,6 +38,7 @@ namespace MegalomaniaPlugin
             //LunarWispTrackingBomb
             //LunarExploderShardProjectile
             projectilePrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/Projectiles/LunarExploderShardProjectile");
+            //muzzleFlashPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/MuzzleFlashes/MuzzleflashLunarShard");
 
 
             ConceitSkill = ScriptableObject.CreateInstance<EgoPrimarySkillDef>();
@@ -44,7 +46,7 @@ namespace MegalomaniaPlugin
             ConceitSkill.activationState = new SerializableEntityStateType(typeof(ConceitAbility));
             ConceitSkill.activationStateMachineName = "Weapon";
             ConceitSkill.beginSkillCooldownOnSkillEnd = false;
-            ConceitSkill.canceledFromSprinting = true;
+            ConceitSkill.canceledFromSprinting = false;
             ConceitSkill.cancelSprintingOnActivation = true;
             ConceitSkill.fullRestockOnAssign = true;
             ConceitSkill.interruptPriority = InterruptPriority.Any;
@@ -70,7 +72,7 @@ namespace MegalomaniaPlugin
             base.OnEnter();
             this.duration = baseDuration / base.attackSpeedStat;
             this.burstDuration = baseBurstDuration / base.attackSpeedStat;
-            shotsLeftInBurst = shotsPerBurst;
+            shotsFiredInBurst = 0;
             Ray aimRay = base.GetAimRay();
             base.StartAimMode(aimRay, 2f, false);
 
@@ -87,17 +89,39 @@ namespace MegalomaniaPlugin
         public override void FixedUpdate()
         {
             base.FixedUpdate();
-            if (base.isAuthority && shotsLeftInBurst > 0 && this.fixedAge > this.burstDuration * (((double)shotsPerBurst - (double)shotsLeftInBurst) / (double)shotsPerBurst))
+            int num = Mathf.FloorToInt(base.fixedAge / burstDuration * (float)shotsPerBurst);
+            if (shotsFiredInBurst <= num && shotsFiredInBurst < shotsPerBurst)
             {
-                Ray aimRay = base.GetAimRay();
-                ProjectileManager.instance.FireProjectile(projectilePrefab, aimRay.origin, Util.QuaternionSafeLookRotation(aimRay.direction, Vector3.up), base.gameObject, damageStat * damageCoefficient, force, RollCrit());
-                shotsLeftInBurst -= 1;
+                fire();
+                
+                shotsFiredInBurst++;
             }
             if (base.fixedAge >= this.duration && base.isAuthority)
             {
                 this.outer.SetNextStateToMain();
                 return;
             }
+        }
+
+        public void fire()
+        {
+            Ray aimRay = base.GetAimRay();
+
+            /*if ((bool)muzzleFlashPrefab)
+            {
+                EffectData effectData = new EffectData
+                {
+                    origin = aimRay.origin + aimRay.direction,
+                    rotation = Util.QuaternionSafeLookRotation(aimRay.direction)
+                };
+                //effectData.SetChildLocatorTransformReference(base.gameObject, childIndex);
+                EffectManager.SpawnEffect(muzzleFlashPrefab, effectData, false);
+                //SimpleMuzzleFlash(muzzleFlashPrefab, base.gameObject, "MuzzleLaser", transmit: false);
+            }*/
+            //TrajectoryAimAssist.ApplyTrajectoryAimAssist(ref aimRay, projectilePrefab, base.gameObject, 50);
+            Vector3 forward = Util.ApplySpread(aimRay.direction, 0f, 1f, 1f, 0.5f);
+            Util.PlayAttackSpeedSound("Play_lunar_exploder_m1_fire", base.gameObject, attackSpeedStat);
+            ProjectileManager.instance.FireProjectile(projectilePrefab, aimRay.origin, Util.QuaternionSafeLookRotation(forward), base.gameObject, damageStat * damageCoefficient, force, RollCrit(), speedOverride: 150);
         }
 
         public override InterruptPriority GetMinimumInterruptPriority()
