@@ -1,10 +1,13 @@
 {
   "strings": {
     "MEGALOMANIA_PRIMARY_NAME": "Conceit (Lang Unavailable)",
-    "MEGALOMANIA_PRIMARY_DESCRIPTION": "Hurl lunar bombs for <style=cIsDamage>360% damage</style>. (Lang Unavailable)"
+    "MEGALOMANIA_PRIMARY_DESCRIPTION": "Hurl lunar bombs for <style=cIsDamage>3x60% damage</style>. (Lang Unavailable)"
   },
   "en": {
     "MEGALOMANIA_PRIMARY_NAME": "Conceit",
-    "MEGALOMANIA_PRIMARY_DESCRIPTION": "Fire a burst of 3 lunar shards for <style=cIsDamage>3x90% damage</style>."
+    "MEGALOMANIA_PRIMARY_DESCRIPTION": "Fire a burst of 3 lunar shards for <style=cIsDamage>3x60% damage</style>.",
+
+    "MEGALOMANIA_MONOPOLIZE_NAME": "Monopolize",
+    "MEGALOMANIA_MONOPOLIZE_DESC": "Crush up to <style=cIsUtility>5 items</style> to gain <style=cIsUtility>twice the Egocentrism</style>."
   }
 }

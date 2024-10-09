@@ -27,7 +27,7 @@ namespace MegalomaniaPlugin.Skills
         private int shotsFiredInBurst = 0;
         private float duration;
         public static SkillDef ConceitSkill;
-        static float damageCoefficient = 0.9f;
+        static float damageCoefficient = 0.6f;
         static float force = 0.1f;
         public static GameObject projectilePrefab;
         //public static GameObject muzzleFlashPrefab;
@@ -41,7 +41,7 @@ namespace MegalomaniaPlugin.Skills
             //muzzleFlashPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/MuzzleFlashes/MuzzleflashLunarShard");
 
 
-            ConceitSkill = ScriptableObject.CreateInstance<EgoPrimarySkillDef>();
+            ConceitSkill = ScriptableObject.CreateInstance<EgoSkillDef>();
 
             ConceitSkill.activationState = new SerializableEntityStateType(typeof(ConceitAbility));
             ConceitSkill.activationStateMachineName = "Weapon";
@@ -59,6 +59,7 @@ namespace MegalomaniaPlugin.Skills
             ConceitSkill.baseRechargeInterval = 0;
             //ConceitSkill.attackSpeedBuffsRestockSpeed = true;
             //ConceitSkill.attackSpeedBuffsRestockSpeed_Multiplier = 0.5f;
+            ConceitSkill.autoHandleLuminousShot = true;
             ConceitSkill.icon = Icon;
             ConceitSkill.skillDescriptionToken = "MEGALOMANIA_PRIMARY_DESCRIPTION";
             ConceitSkill.skillName = "Conceit";

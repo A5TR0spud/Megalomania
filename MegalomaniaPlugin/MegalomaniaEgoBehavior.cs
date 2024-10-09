@@ -197,7 +197,7 @@ namespace MegalomaniaPlugin
                 return;
             }
 
-            utils.TransformItems(body.inventory, 1, transformRng, body.master);
+            utils.TransformItems(body.inventory, 1, transformRng, body.master, false);
         }
     }
 }

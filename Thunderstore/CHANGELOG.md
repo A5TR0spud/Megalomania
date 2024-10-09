@@ -2,16 +2,17 @@
 ## 1.1.0
 
 - Added Stack Size Matters and 2 related configurable properties
-- Migrated Primary Replacement to new section *(7.1 Skills - Primary)*
+- Migrated Primary Replacement to new section *(7. Skills)*
 - Rename Primary Enhancement -> Primary Targetting
-- Adjust sprite of Conceit
+- New skill: Monopolize: Crush up to 5 items and gain back double as Egocentrism. Always grants at least 1. 60s cooldown.
+- Adjust anti-aliasing of Conceit icon
 - Conceit now fires in a burst of 3 at a base rate of 8/s
 - Conceit has a base burst per second rate of 1/s
-- Nerf Conceit damage *(360% -> 90%)*
+- Nerf Conceit damage *(360% -> 60%)*
 - Conceit now has some spread *(0 -> 1)*
 - Conceit now has firing sound effects
-- Conceit projectiles are faster *(unknown -> 150)*
-*After testing Conceit with exploder muzzle flash, I've elected it too obstructive to include.*
+- Conceit projectiles are faster *(80, I think -> 150)*
+*After testing Conceit with exploder muzzle flash, I've elected it too obstructive to include in Conceit. It's instead used in Monopolize.*
 
 ## 1.0.1
 

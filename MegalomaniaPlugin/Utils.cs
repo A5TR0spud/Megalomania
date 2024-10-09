@@ -67,10 +67,11 @@ namespace MegalomaniaPlugin
 
         private Dictionary<string, SkillDef> SkillLookup { get; set; }
 
-        public void init()
+        public void initSkillsList()
         {
             SkillLookup = new Dictionary<string, SkillDef>();
             SkillLookup.Add("conceit", ConceitAbility.ConceitSkill);
+            SkillLookup.Add("monopolize", MonopolizeAbility.MonopolizeSkill);
         }
 
 #nullable enable
@@ -97,23 +98,24 @@ namespace MegalomaniaPlugin
             }
         }
 
-        public void TransformItems(Inventory inventory, int amount, Xoroshiro128Plus transformRng, CharacterMaster master)
+        public int TransformItems(Inventory inventory, int amount, Xoroshiro128Plus transformRng, CharacterMaster master, bool ignoreCap)
         {
+            int transformations = 0;
             if (!NetworkServer.active)
             {
                 Log.Warning("[Server] function 'TransformItems' called on client");
-                return;
+                return 0;
             }
 
             if (!inventory || !master)
-                return;
+                return 0;
 
             if (amount < 1)
-                return;
+                return 0;
 
             if (parsedItemConvertToList.Count < 1)
             {
-                return;
+                return 0;
             }
 
             if (transformRng == null)
@@ -149,7 +151,7 @@ namespace MegalomaniaPlugin
                 {
                     Log.Error("Egocentrism tried to convert an item but something went wrong. Did you forget to add an enum or function?\n" +
                         $"parsedConversionSelectionType: '{parsedConversionSelectionType}'");
-                    return;
+                    return 0;
                 }
 
                 List<ItemIndex> toGiveList = getWeightedDictKeyAndBackup(parsedItemConvertToList, transformRng);
@@ -173,7 +175,7 @@ namespace MegalomaniaPlugin
                     g++;
                     if (g >= weightedInventory.Count)
                     {
-                        return;
+                        return 0;
                     }
                     continue;
                 }
@@ -182,8 +184,10 @@ namespace MegalomaniaPlugin
                 inventory.GiveItem(toGive);
 
                 //balance transformation over time
-                inventory.GiveItem(MegalomaniaPlugin.transformToken, 1 + MegalomaniaPlugin.ConfigMaxTransformationsPerStageStacking.Value);
-
+                if (!ignoreCap)
+                    inventory.GiveItem(MegalomaniaPlugin.transformToken, 1 + MegalomaniaPlugin.ConfigMaxTransformationsPerStageStacking.Value);
+                
+                transformations++;
                 //inform owner that ego happened
                 CharacterMasterNotificationQueue.SendTransformNotification(master, toTransform, toGive, CharacterMasterNotificationQueue.TransformationType.LunarSun);
 
@@ -199,6 +203,8 @@ namespace MegalomaniaPlugin
 
                 amount--;
             }
+
+            return transformations;
         }
 
         public int weighSingleItem(ItemIndex itemIndex, int itemCount)

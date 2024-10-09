@@ -138,13 +138,14 @@ namespace MegalomaniaPlugin
             HookLunarSunStats();
 
             InitItems();
-            InitSkills();
-            utils.init();
-
             utils.ParseRarityPriorityList();
+            utils.ParseConversionSelectionType();
+            InitSkills();
+            utils.initSkillsList();
+
             //parse items after items have loaded
             On.RoR2.ItemCatalog.SetItemDefs += ItemCatalog_SetItemDefs;
-            utils.ParseConversionSelectionType(); 
+            
 
             //Helper for transform time modality (benthic and timed max)
             //Clears counter for timed max, and does the conversion for benthic
@@ -222,6 +223,7 @@ namespace MegalomaniaPlugin
         private void InitSkills()
         {
             ConceitAbility.initEgoPrimary(EgoPrimarySprite);
+            MonopolizeAbility.initEgoMonopolize(EgoPrimarySprite, utils);
         }
 
         private void CreateConfig()
@@ -408,10 +410,11 @@ namespace MegalomaniaPlugin
             #region Skills
             ConfigSkillsInfo = Config.Bind("7.0 Skills - All", "Skill Info", ":)",
             "Ignored. This is for information on what skills do.\n" +
-            "Conceit: Fire a burst of 3 lunar shards for 3x90% damage.");
+            "Conceit: Fire a burst of 3 lunar shards for 3x6y0% damage. Proc: 1.0\n" +
+            "Monopolize: Crush up to 5 items. Gain twice the items lost as Egocentrism. Always grants at least 1 Egocentrism. Cooldown 60s.");
             ConfigPrimarySkill = Config.Bind("7.1 Skills - Primary", "Skill to Use", "conceit",
                 "What skill to replace primary with.\n" +
-                "Allowed values: conceit");
+                "Allowed values: conceit, monopolize");
             ConfigPrimaryReplacement = Config.Bind("7.1 Skills - Primary", "Enable Primary Replacement", false,
                 "If true, holding Egocentrism replaces the primary skill.");
             ConfigCorruptVisions = Config.Bind("7.1 Skills - Primary", "Corrupt Visions of Heresy", true,
@@ -500,7 +503,7 @@ namespace MegalomaniaPlugin
                 {
                     amount = Math.Min(amount, ConfigMaxTransformationsPerStage.Value);
                 }
-                utils.TransformItems(inventory, amount, null, self);
+                utils.TransformItems(inventory, amount, null, self, false);
             }
         }
 
