@@ -13,6 +13,7 @@
 - Conceit now has some spread *(0 -> 1)*
 - Conceit now has firing sound effects
 - Conceit projectiles are faster *(80? -> 150)*
+- 
 *After testing Conceit with exploder muzzle flash, I've elected it too obstructive to include in Conceit. It's instead used in Monopolize.*
 
 ## 1.0.1
