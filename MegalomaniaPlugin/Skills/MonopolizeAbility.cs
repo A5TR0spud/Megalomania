@@ -119,19 +119,12 @@ namespace MegalomaniaPlugin.Skills
             }
             else
             {
-                MonopolizeOrbUpdater orbUpdater = base.characterBody.gameObject.GetComponent<MonopolizeOrbUpdater>();
-                if (!orbUpdater)
-                    orbUpdater = base.characterBody.gameObject.AddComponent<MonopolizeOrbUpdater>();
-
                 foreach (ItemIndex itemIndex in transList)
                 {
                     ItemTransferOrb itemTransferOrb = ItemTransferOrb.DispatchItemTransferOrb(muzzleLocation, null, itemIndex, 1, delegate (ItemTransferOrb orb)
                     {
                         base.characterBody.inventory.GiveItem(DLC1Content.Items.LunarSun);
-                        orbUpdater.currentOrbs.Remove(orb);
                     }, orbDestinationOverride: base.characterBody.mainHurtBox);
-
-                    orbUpdater.currentOrbs.Add(itemTransferOrb);
                 }
             }
         }
@@ -149,35 +142,6 @@ namespace MegalomaniaPlugin.Skills
         public override InterruptPriority GetMinimumInterruptPriority()
         {
             return InterruptPriority.PrioritySkill;
-        }
-    }
-
-    public class MonopolizeOrbUpdater : MonoBehaviour
-    {
-        public List<ItemTransferOrb> currentOrbs = new List<ItemTransferOrb>();
-
-        public void FixedUpdate()
-        {
-            List<ItemTransferOrb> toremove = new List<ItemTransferOrb>();
-            foreach (ItemTransferOrb orb in currentOrbs)
-            {
-                if (orb.timeUntilArrival <= 0.5f)
-                {
-                    Chat.AddMessage("halfway");
-                    GameObject orbEffectPrefab = orb.GetFieldValue<GameObject>("orbEffectPrefab");
-                    Vector3 previousPosition = orbEffectPrefab.GetFieldValue<Vector3>("previousPosition");
-
-                    ItemTransferOrb itemTransferOrb = ItemTransferOrb.DispatchItemTransferOrb(previousPosition, null, DLC1Content.Items.LunarSun.itemIndex, 1,
-                        orbDestinationOverride: orb.target);
-
-                    toremove.Add(orb);
-                }
-            }
-            foreach (ItemTransferOrb orb in toremove)
-            {
-                currentOrbs.Remove(orb);
-            }
-            toremove.Clear();
         }
     }
 }
