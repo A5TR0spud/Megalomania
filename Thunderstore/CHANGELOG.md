@@ -2,6 +2,8 @@
 ## 1.1.0 - *Skills*
 
 - Added Stack Size Matters and 2 related configurable properties
+- //TODO: use language API to generate ego strings based on config
+- //TODO: redo Conceit and Monopolize icons with a force of 50 instead of 100. 100 has visible aliasing.
 - Migrated Primary Replacement to new section *(7. Skills)*
 - Now defaults to replacing primary with Conceit, and immediately corrupting Visions of Heresy to prevent conflict.
 - Rename Primary Enhancement -> Primary Targetting
