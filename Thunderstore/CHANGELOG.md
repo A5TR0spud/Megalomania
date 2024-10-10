@@ -3,12 +3,11 @@
 
 - Added Stack Size Matters and 2 related configurable properties
 - //TODO: use language API to generate ego strings based on config
-- //TODO: redo Conceit and Monopolize icons with a force of 50 instead of 100. 100 has visible aliasing.
 - Migrated Primary Replacement to new section *(7. Skills)*
 - Now defaults to replacing primary with Conceit, and immediately corrupting Visions of Heresy to prevent conflict.
 - Rename Primary Enhancement -> Primary Targetting
 - New skill: Monopolize: Crush up to 5 items and gain back double as Egocentrism. Always grants at least 1. 60s cooldown.
-- Adjust anti-aliasing of Conceit icon
+- Replaced Conceit icon
 - Conceit now fires in a burst of 3 at a base rate of 8/s
 - Conceit has a base burst per second rate of 1/s
 - Nerf Conceit damage *(360% -> 60%)*
