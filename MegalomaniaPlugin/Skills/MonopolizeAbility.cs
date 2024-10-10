@@ -16,6 +16,7 @@ using UnityEngine.Networking;
 using UnityEngine.UIElements;
 using static UnityEngine.ParticleSystem.PlaybackState;
 using static UnityEngine.UI.GridLayoutGroup;
+using static UnityEngine.UI.Image;
 
 namespace MegalomaniaPlugin.Skills
 {
@@ -119,19 +120,49 @@ namespace MegalomaniaPlugin.Skills
             }
             else
             {
-                MonopolizeOrbUpdater orbUpdater = base.characterBody.gameObject.GetComponent<MonopolizeOrbUpdater>();
-                if (!orbUpdater)
-                    orbUpdater = base.characterBody.gameObject.AddComponent<MonopolizeOrbUpdater>();
-
+                //BUG: orbs get darker over time and then overflow to white or pure red
                 foreach (ItemIndex itemIndex in transList)
                 {
-                    ItemTransferOrb itemTransferOrb = ItemTransferOrb.DispatchItemTransferOrb(muzzleLocation, null, itemIndex, 1, delegate (ItemTransferOrb orb)
+                    ItemTransferOrb itemTransferOrb = new ItemTransferOrb();
+                    itemTransferOrb.origin = muzzleLocation;
+                    itemTransferOrb.inventoryToGrantTo = null;
+                    itemTransferOrb.itemIndex = itemIndex;
+                    itemTransferOrb.stack = 1;
+                    itemTransferOrb.travelDuration = 0.5f;
+                    itemTransferOrb.target = base.characterBody.mainHurtBox;
+                    itemTransferOrb.onArrival = delegate (ItemTransferOrb orb)
                     {
-                        base.characterBody.inventory.GiveItem(DLC1Content.Items.LunarSun);
-                        orbUpdater.currentOrbs.Remove(orb);
-                    }, orbDestinationOverride: base.characterBody.mainHurtBox);
+                        muzzleLocation = aimRay.origin;
+                        GameObject root = base.gameObject;
 
-                    orbUpdater.currentOrbs.Add(itemTransferOrb);
+                        CharacterModel model = base.characterBody.modelLocator.modelTransform.gameObject.GetComponent<CharacterModel>();
+                        List<CharacterModel.ParentedPrefabDisplay> li = model.parentedPrefabDisplays;
+
+                        foreach (CharacterModel.ParentedPrefabDisplay iaa in li)
+                        {
+                            if (iaa.itemIndex == DLC1Content.Items.LunarSun.itemIndex)
+                            {
+                                muzzleLocation = iaa.itemDisplay.transform.gameObject.transform.position;
+                                root = iaa.itemDisplay.transform.gameObject;
+                                break;
+                            }
+                        }
+
+                        ItemTransferOrb b = new ItemTransferOrb();
+                        b.origin = muzzleLocation;
+                        b.inventoryToGrantTo = null;
+                        b.itemIndex = DLC1Content.Items.LunarSun.itemIndex;
+                        b.stack = 1;
+                        b.travelDuration = 0.5f;
+                        b.target = base.characterBody.mainHurtBox;
+                        b.onArrival = delegate (ItemTransferOrb orb)
+                        {
+                            base.characterBody.inventory.GiveItem(DLC1Content.Items.LunarSun);
+                        };
+                        OrbManager.instance.AddOrb(b);
+                    };
+
+                    OrbManager.instance.AddOrb(itemTransferOrb);
                 }
             }
         }
@@ -149,35 +180,6 @@ namespace MegalomaniaPlugin.Skills
         public override InterruptPriority GetMinimumInterruptPriority()
         {
             return InterruptPriority.PrioritySkill;
-        }
-    }
-
-    public class MonopolizeOrbUpdater : MonoBehaviour
-    {
-        public List<ItemTransferOrb> currentOrbs = new List<ItemTransferOrb>();
-
-        public void FixedUpdate()
-        {
-            List<ItemTransferOrb> toremove = new List<ItemTransferOrb>();
-            foreach (ItemTransferOrb orb in currentOrbs)
-            {
-                if (orb.timeUntilArrival <= 0.5f)
-                {
-                    Chat.AddMessage("halfway");
-                    GameObject orbEffectPrefab = orb.GetFieldValue<GameObject>("orbEffectPrefab");
-                    Vector3 previousPosition = orbEffectPrefab.GetComponent<OrbEffect>().GetFieldValue<Vector3>("previousPosition");
-
-                    ItemTransferOrb itemTransferOrb = ItemTransferOrb.DispatchItemTransferOrb(previousPosition, null, DLC1Content.Items.LunarSun.itemIndex, 1,
-                        orbDestinationOverride: orb.target);
-
-                    toremove.Add(orb);
-                }
-            }
-            foreach (ItemTransferOrb orb in toremove)
-            {
-                currentOrbs.Remove(orb);
-            }
-            toremove.Clear();
         }
     }
 }
