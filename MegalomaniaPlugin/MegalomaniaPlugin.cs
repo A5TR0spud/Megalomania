@@ -39,6 +39,7 @@ namespace MegalomaniaPlugin
 
         public static AssetBundle megalomaniaAssetBundle;
         public static Sprite EgoPrimarySprite;
+        public static Sprite EgoMonopolizeSprite;
         
         #region Constants and Configs
 
@@ -110,9 +111,22 @@ namespace MegalomaniaPlugin
 
         #region skills
         public static ConfigEntry<string> ConfigSkillsInfo { get; set; }
+
         public static ConfigEntry<string> ConfigPrimarySkill {  get; set; }
         public static ConfigEntry<bool> ConfigPrimaryReplacement { get; set; }
         public static ConfigEntry<bool> ConfigCorruptVisions { get; set; }
+
+        /*public static ConfigEntry<string> ConfigSecondarySkill { get; set; }
+        public static ConfigEntry<bool> ConfigPrimaryReplacement { get; set; }
+        public static ConfigEntry<bool> ConfigCorruptVisions { get; set; }
+
+        public static ConfigEntry<string> ConfigUtilitySkill { get; set; }
+        public static ConfigEntry<bool> ConfigPrimaryReplacement { get; set; }
+        public static ConfigEntry<bool> ConfigCorruptVisions { get; set; }*/
+
+        public static ConfigEntry<string> ConfigSpecialSkill { get; set; }
+        public static ConfigEntry<bool> ConfigSpecialReplacement { get; set; }
+        public static ConfigEntry<bool> ConfigCorruptEssence { get; set; }
         #endregion
 
         #endregion
@@ -165,19 +179,36 @@ namespace MegalomaniaPlugin
         {
             SkillLocator skillLocator = self.skillLocator;
 
-            RoR2.Skills.SkillDef primarySkillRep = utils.lookupSkill(ConfigPrimarySkill.Value);
-
-            if ((bool)self.master && (bool)self.inventory && (bool)skillLocator && ConfigPrimaryReplacement.Value && primarySkillRep)
+            if ((bool)skillLocator && (bool)self.master && (bool)self.inventory)
             {
-                if (ConfigCorruptVisions.Value)
+                RoR2.Skills.SkillDef primarySkillRep = utils.lookupSkill(ConfigPrimarySkill.Value);
+                if (ConfigPrimaryReplacement.Value && (bool)primarySkillRep)
                 {
-                    utils.CorruptItem(self.inventory, RoR2Content.Items.LunarPrimaryReplacement.itemIndex, self.master);
-                    self.ReplaceSkillIfItemPresent(skillLocator.primary, DLC1Content.Items.LunarSun.itemIndex, primarySkillRep);
+                    if (ConfigCorruptVisions.Value)
+                    {
+                        utils.CorruptItem(self.inventory, RoR2Content.Items.LunarPrimaryReplacement.itemIndex, self.master);
+                        self.ReplaceSkillIfItemPresent(skillLocator.primary, DLC1Content.Items.LunarSun.itemIndex, primarySkillRep);
+                    }
+                    else if (self.inventory.GetItemCount(RoR2Content.Items.LunarPrimaryReplacement) == 0)
+                    {
+                        self.ReplaceSkillIfItemPresent(skillLocator.primary, DLC1Content.Items.LunarSun.itemIndex, primarySkillRep);
+                    }
                 }
-                else if (self.inventory.GetItemCount(RoR2Content.Items.LunarPrimaryReplacement) == 0)
-                    self.ReplaceSkillIfItemPresent(skillLocator.primary, DLC1Content.Items.LunarSun.itemIndex, primarySkillRep);
-            }
 
+                RoR2.Skills.SkillDef specialSkillRep = utils.lookupSkill(ConfigSpecialSkill.Value);
+                if (ConfigSpecialReplacement.Value && (bool)specialSkillRep)
+                {
+                    if (ConfigCorruptEssence.Value)
+                    {
+                        utils.CorruptItem(self.inventory, RoR2Content.Items.LunarSpecialReplacement.itemIndex, self.master);
+                        self.ReplaceSkillIfItemPresent(skillLocator.special, DLC1Content.Items.LunarSun.itemIndex, specialSkillRep);
+                    }
+                    else if (self.inventory.GetItemCount(RoR2Content.Items.LunarSpecialReplacement) == 0)
+                    {
+                        self.ReplaceSkillIfItemPresent(skillLocator.special, DLC1Content.Items.LunarSun.itemIndex, specialSkillRep);
+                    }
+                }
+            }
             orig(self);
         }
 
@@ -185,6 +216,7 @@ namespace MegalomaniaPlugin
             megalomaniaAssetBundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location), "AssetBundles", "megalomaniaassets"));
 
             EgoPrimarySprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texConceitIcon");
+            EgoMonopolizeSprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texMonopolizeIcon");
         }
 
         private void ItemCatalog_SetItemDefs(On.RoR2.ItemCatalog.orig_SetItemDefs orig, ItemDef[] newItemDefs)
@@ -223,7 +255,7 @@ namespace MegalomaniaPlugin
         private void InitSkills()
         {
             ConceitAbility.initEgoPrimary(EgoPrimarySprite);
-            MonopolizeAbility.initEgoMonopolize(EgoPrimarySprite, utils);
+            MonopolizeAbility.initEgoMonopolize(EgoMonopolizeSprite, utils);
         }
 
         private void CreateConfig()
@@ -412,14 +444,24 @@ namespace MegalomaniaPlugin
             "Ignored. This is for information on what skills do.\n" +
             "Conceit: Fire a burst of 3 lunar shards for 3x6y0% damage. Proc: 1.0\n" +
             "Monopolize: Crush up to 5 items. Gain twice the items lost as Egocentrism. Always grants at least 1 Egocentrism. Cooldown 60s.");
+            
             ConfigPrimarySkill = Config.Bind("7.1 Skills - Primary", "Skill to Use", "conceit",
                 "What skill to replace primary with.\n" +
                 "Allowed values: conceit, monopolize");
-            ConfigPrimaryReplacement = Config.Bind("7.1 Skills - Primary", "Enable Primary Replacement", false,
+            ConfigPrimaryReplacement = Config.Bind("7.1 Skills - Primary", "Enable Primary Replacement", true,
                 "If true, holding Egocentrism replaces the primary skill.");
             ConfigCorruptVisions = Config.Bind("7.1 Skills - Primary", "Corrupt Visions of Heresy", true,
                 "If true, Visions of Heresy is corrupted into Egocentrism.\n" +
                 "If false, Visions of Heresy's \"Hungering Gaze\" skill overrides Ego skill replacement.");
+
+            ConfigSpecialSkill = Config.Bind("7.4 Skills - Special", "Skill to Use", "monopolize",
+                "What skill to replace special with.\n" +
+                "Allowed values: conceit, monopolize");
+            ConfigSpecialReplacement = Config.Bind("7.4 Skills - Special", "Enable Special Replacement", false,
+                "If true, holding Egocentrism replaces the special skill.");
+            ConfigCorruptEssence = Config.Bind("7.4 Skills - Special", "Corrupt Essence of Heresy", true,
+                "If true, Essence of Heresy is corrupted into Egocentrism.\n" +
+                "If false, Essence of Heresy's \"Ruin\" skill overrides Ego skill replacement.");
             #endregion
 
             ConfigCleanup();
@@ -503,7 +545,7 @@ namespace MegalomaniaPlugin
                 {
                     amount = Math.Min(amount, ConfigMaxTransformationsPerStage.Value);
                 }
-                utils.TransformItems(inventory, amount, null, self, false);
+                utils.TransformItems(inventory, amount, null, self);
             }
         }
 

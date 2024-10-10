@@ -8,6 +8,6 @@
     "MEGALOMANIA_PRIMARY_DESCRIPTION": "Fire a burst of 3 lunar shards for <style=cIsDamage>3x60% damage</style>.",
 
     "MEGALOMANIA_MONOPOLIZE_NAME": "Monopolize",
-    "MEGALOMANIA_MONOPOLIZE_DESC": "Crush up to <style=cIsUtility>5 items</style> to gain <style=cIsUtility>twice the Egocentrism</style>."
+    "MEGALOMANIA_MONOPOLIZE_DESC": "Crush up to <style=cIsUtility>5 items</style> to gain <style=cIsUtility>twice the Egocentrism</style>. Always grants <style=cIsUtility>at least one</style>."
   }
 }

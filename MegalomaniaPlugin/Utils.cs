@@ -1,15 +1,18 @@
 ﻿using BepInEx;
 using MegalomaniaPlugin.Skills;
 using RoR2;
+using RoR2.Orbs;
 using RoR2.Skills;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
+using static UnityEngine.UI.GridLayoutGroup;
 
 namespace MegalomaniaPlugin
 {
@@ -98,24 +101,24 @@ namespace MegalomaniaPlugin
             }
         }
 
-        public int TransformItems(Inventory inventory, int amount, Xoroshiro128Plus transformRng, CharacterMaster master, bool ignoreCap)
+        public List<ItemIndex> TransformItems(Inventory inventory, int amount, Xoroshiro128Plus transformRng, CharacterMaster master, bool ignoreCap = false, bool notifUI = true)
         {
-            int transformations = 0;
+            List<ItemIndex> toReturn = new List<ItemIndex>();
             if (!NetworkServer.active)
             {
                 Log.Warning("[Server] function 'TransformItems' called on client");
-                return 0;
+                return toReturn;
             }
 
             if (!inventory || !master)
-                return 0;
+                return toReturn;
 
             if (amount < 1)
-                return 0;
+                return toReturn;
 
             if (parsedItemConvertToList.Count < 1)
             {
-                return 0;
+                return toReturn;
             }
 
             if (transformRng == null)
@@ -151,7 +154,7 @@ namespace MegalomaniaPlugin
                 {
                     Log.Error("Egocentrism tried to convert an item but something went wrong. Did you forget to add an enum or function?\n" +
                         $"parsedConversionSelectionType: '{parsedConversionSelectionType}'");
-                    return 0;
+                    return toReturn;
                 }
 
                 List<ItemIndex> toGiveList = getWeightedDictKeyAndBackup(parsedItemConvertToList, transformRng);
@@ -175,7 +178,7 @@ namespace MegalomaniaPlugin
                     g++;
                     if (g >= weightedInventory.Count)
                     {
-                        return 0;
+                        return toReturn;
                     }
                     continue;
                 }
@@ -186,10 +189,14 @@ namespace MegalomaniaPlugin
                 //balance transformation over time
                 if (!ignoreCap)
                     inventory.GiveItem(MegalomaniaPlugin.transformToken, 1 + MegalomaniaPlugin.ConfigMaxTransformationsPerStageStacking.Value);
-                
-                transformations++;
+
+                toReturn.Add(toTransform);
+
                 //inform owner that ego happened
-                CharacterMasterNotificationQueue.SendTransformNotification(master, toTransform, toGive, CharacterMasterNotificationQueue.TransformationType.LunarSun);
+                if (notifUI)
+                {
+                    CharacterMasterNotificationQueue.SendTransformNotification(master, toTransform, toGive, CharacterMasterNotificationQueue.TransformationType.LunarSun);
+                }
 
                 //remove item from possible selections if it no longer exists, and re-weight it if stack size matters
                 if (inventory.GetItemCount(toTransform) < 1)
@@ -204,7 +211,7 @@ namespace MegalomaniaPlugin
                 amount--;
             }
 
-            return transformations;
+            return toReturn;
         }
 
         public int weighSingleItem(ItemIndex itemIndex, int itemCount)

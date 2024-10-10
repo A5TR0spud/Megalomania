@@ -1,8 +1,9 @@
 
-## 1.1.0
+## 1.1.0 - *Skills*
 
 - Added Stack Size Matters and 2 related configurable properties
 - Migrated Primary Replacement to new section *(7. Skills)*
+- Now defaults to replacing primary with Conceit, and immediately corrupting Visions of Heresy to prevent conflict.
 - Rename Primary Enhancement -> Primary Targetting
 - New skill: Monopolize: Crush up to 5 items and gain back double as Egocentrism. Always grants at least 1. 60s cooldown.
 - Adjust anti-aliasing of Conceit icon

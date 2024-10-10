@@ -35,7 +35,7 @@ Config Options:
 	= If false, disables bombs completely
 
 List of skill slots (primary, secondary, etc) and an Enum of what skill to put in that slot
-(Enum)  Primary: Shard
+(Enum)  Primary: Conceit
 (bool)  Replace Primary: false
 (Enum)  Secondary: Twin Shots
 (bool)  Replace Secondary: false
@@ -43,13 +43,13 @@ List of skill slots (primary, secondary, etc) and an Enum of what skill to put i
 (bool)  Replace Utility: false
 (Enum)  Special: Monopolize
 (bool)  Replace Special: false
-Shard: Fire a lunar shard for 360% damage. Max: 3. Recharge: 2s for all stock. Firerate: 3/s.
+Conceit: Fire a lunar shard for 360% damage. Max: 3. Recharge: 2s for all stock. Firerate: 3/s.
 Convergence: Focus your orbiting bombs to an enemy in view.
 ???: Fire a lunarwisp tracking bomb. Cooldown: 6s.
 ???: Fire lunarwisp minigun for up to 6 seconds. Cooldown begins on skill end: 6 seconds.
 Twin Shots: Fire 6 lunargolem bombs. 6s cooldown.
 Shell: Passively converts half of health to shields. On use: gain 50% barrier and immediately begin shield recharging. cooldown: 2x shield recharge time + 7s
-Conceit: Damage allies in a 16m radius for 10% of their max health. Heal 10% of your max health per ally damaged. Gain War Cry for 1 second per ally damaged. Cooldown: Duration + 10s.
+???: Damage allies in a 16m radius for 10% of their max health. Heal 10% of your max health per ally damaged. Gain War Cry for 1 second per ally damaged. Cooldown: Duration + 10s.
 Monopolize: Crush a few items (configurable) and gain more Egocentrism than the amount of items you lost. 30s cooldown.
 
 (float) Bomb Creation Initial Rate (IR): 3 seconds
