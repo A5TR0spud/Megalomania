@@ -19,16 +19,16 @@ namespace MegalomaniaPlugin
     public class Utils
     {
         //Parsed Rarity:Priority List
-        private Dictionary<ItemTier, int> parsedRarityPriorityList;
+        public Dictionary<ItemTier, int> parsedRarityPriorityList;
 
         //Parsed Item:Priority List
-        private Dictionary<ItemIndex, int> parsedItemPriorityList;
+        public Dictionary<ItemIndex, int> parsedItemPriorityList;
 
         //Selection mode
-        private Utils.ConversionSelectionType parsedConversionSelectionType;
+        public Utils.ConversionSelectionType parsedConversionSelectionType;
 
         //Items to convert to
-        private Dictionary<ItemIndex, int> parsedItemConvertToList;
+        public Dictionary<ItemIndex, int> parsedItemConvertToList;
 
         //Thank you ConfigEgocentrism by Judgy53 for code reference:
         //https://github.com/Judgy53/ConfigEgocentrism/blob/main/ConfigEgocentrism/ConfigEgocentrismPlugin.cs

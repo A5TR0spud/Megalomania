@@ -45,7 +45,6 @@ namespace MegalomaniaPlugin.Skills
 
             ConceitSkill.activationState = new SerializableEntityStateType(typeof(ConceitAbility));
             ConceitSkill.activationStateMachineName = "Weapon";
-            ConceitSkill.beginSkillCooldownOnSkillEnd = false;
             ConceitSkill.canceledFromSprinting = false;
             ConceitSkill.cancelSprintingOnActivation = true;
             ConceitSkill.fullRestockOnAssign = true;
@@ -57,8 +56,7 @@ namespace MegalomaniaPlugin.Skills
             ConceitSkill.requiredStock = 1;
             ConceitSkill.stockToConsume = 1;
             ConceitSkill.baseRechargeInterval = 0;
-            //ConceitSkill.attackSpeedBuffsRestockSpeed = true;
-            //ConceitSkill.attackSpeedBuffsRestockSpeed_Multiplier = 0.5f;
+            ConceitSkill.interruptPriority = InterruptPriority.Any;
             ConceitSkill.autoHandleLuminousShot = true;
             ConceitSkill.icon = Icon;
             ConceitSkill.skillDescriptionToken = "MEGALOMANIA_PRIMARY_DESCRIPTION";
@@ -127,7 +125,7 @@ namespace MegalomaniaPlugin.Skills
 
         public override InterruptPriority GetMinimumInterruptPriority()
         {
-            return InterruptPriority.PrioritySkill;
+            return InterruptPriority.Skill;
         }
     }
 }

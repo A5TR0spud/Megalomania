@@ -49,13 +49,12 @@ namespace MegalomaniaPlugin.Skills
             MonopolizeSkill.requiredStock = 1;
             MonopolizeSkill.stockToConsume = 1;
             MonopolizeSkill.baseRechargeInterval = 60f;
-            //MonopolizeSkill.attackSpeedBuffsRestockSpeed = false;
-            //ConceitSkill.attackSpeedBuffsRestockSpeed_Multiplier = 0.5f;
+            MonopolizeSkill.interruptPriority = InterruptPriority.Skill;
             MonopolizeSkill.icon = Icon;
             MonopolizeSkill.skillDescriptionToken = "MEGALOMANIA_MONOPOLIZE_DESC";
             MonopolizeSkill.skillName = "Monopolize";
             MonopolizeSkill.skillNameToken = "MEGALOMANIA_MONOPOLIZE_NAME";
-            MonopolizeSkill.autoHandleLuminousShot = false;
+            MonopolizeSkill.autoHandleLuminousShot = true;
 
             ContentAddition.AddSkillDef(MonopolizeSkill);
         }

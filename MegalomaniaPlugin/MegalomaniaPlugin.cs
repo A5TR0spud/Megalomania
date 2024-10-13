@@ -173,6 +173,8 @@ namespace MegalomaniaPlugin
 
             //Override Egocentrism code, haha. Sorry mate.
             megalomaniaEgoBehavior.init(utils);
+
+            LanguageUtils.init(utils);
         }
 
         private void CharacterBody_OnInventoryChanged(On.RoR2.CharacterBody.orig_OnInventoryChanged orig, CharacterBody self)
@@ -261,10 +263,13 @@ namespace MegalomaniaPlugin
         private void CreateConfig()
         {
             ConfigCompatibilityMode = Config.Bind("0. Main", "Compatibility Mode", false,
-               "If true, skips the hook to override Egocentrism's behavior:\n" +
+               "If true, skips the hook to override Egocentrism in a couple of ways:\n" +
                "Disables all bomb stat and transformation over time changes.\n" +
-               "Other features, including stats (eg. max health), will still work.\n" +
-               "Transformation on stage start will still work.");
+               "Disables description override.\n" +
+               "Other features that still work:\n" +
+               "Stacking owner stats, such as health and movement speed.\n" +
+               "Transformation on stage start.\n" +
+               "Skill replacements.");
 
             #region Stats
             // STATS
@@ -348,7 +353,7 @@ namespace MegalomaniaPlugin
             ConfigStageStartTransform = Config.Bind("5. Transform - When to Transform", "Stage Start Transformations", 5,
                 "How many items to convert on stage start, similar to Benthic Bloom.\n" +
                 "If this is set to 0 or a negative number, conversion on stage start is disabled.");
-
+            
             ConfigStageStartTransformStack = Config.Bind("5. Transform - When to Transform", "Stage Start Transformations Per Stack", 0.0,
                 "How many items to convert on stage start per additional stack.\n" +
                 "Rounded down after calculating.");
