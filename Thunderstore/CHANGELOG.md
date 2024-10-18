@@ -8,6 +8,7 @@
 - Rename Primary Enhancement -> Primary Targetting
 - New skill: Monopolize: Crush up to 5 items and gain back double as Egocentrism. Always grants at least 1. 60s cooldown.
 - New skill: Chimera Bomb: Fire a tracking lunar bomb for 480% damage. 2s cooldown.
+- New skill: Twin Shot: Fire 6 lunar helices for 6x360% damage.
 - Replaced Conceit icon
 - Conceit now fires in a burst of 3 at a base rate of 8/s
 - Conceit has a base burst per second rate of 1/s
