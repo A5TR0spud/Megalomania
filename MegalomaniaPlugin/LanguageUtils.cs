@@ -39,6 +39,8 @@ namespace MegalomaniaPlugin
         private static double moveSpeed;
         private static bool doReplacePrimary;
         private static string primaryReplacementID;
+        private static bool doReplaceSecondary;
+        private static string secondaryReplacementID;
         private static bool doReplaceSpecial;
         private static string specialReplacementID;
 
@@ -74,6 +76,8 @@ namespace MegalomaniaPlugin
             moveSpeed = MegalomaniaPlugin.ConfigMovementSpeedPerStack.Value * 100;
             primaryReplacementID = utils.lookupSkill(MegalomaniaPlugin.ConfigPrimarySkill.Value.Trim().ToLower()).skillNameToken;
             doReplacePrimary = MegalomaniaPlugin.ConfigPrimaryReplacement.Value && !primaryReplacementID.IsNullOrWhiteSpace();
+            secondaryReplacementID = utils.lookupSkill(MegalomaniaPlugin.ConfigSecondarySkill.Value.Trim().ToLower()).skillNameToken;
+            doReplaceSecondary = MegalomaniaPlugin.ConfigSecondaryReplacement.Value && !secondaryReplacementID.IsNullOrWhiteSpace();
             specialReplacementID = utils.lookupSkill(MegalomaniaPlugin.ConfigSpecialSkill.Value.Trim().ToLower()).skillNameToken;
             doReplaceSpecial = MegalomaniaPlugin.ConfigSpecialReplacement.Value && !specialReplacementID.IsNullOrWhiteSpace();
 
@@ -122,7 +126,7 @@ namespace MegalomaniaPlugin
                 }
 
                 bombGenString = $"Every <style=cIsUtility>{bombInitialGenerationTime}</style>{bombRateString} seconds, " +
-                    $"gain an <style=cIsDamage>orbiting bomb</style> that detonates on impact for <style=cIsDamage>{bombInitDamage*100}</style>{bombStackDamageString} damage, " +
+                    $"gain an <style=cIsDamage>orbiting bomb</style> that detonates on impact for <style=cIsDamage>{bombInitDamage*100}%</style>{bombStackDamageString} damage, " +
                     $"up to a maximum of <style=cIsUtility>{bombCapInit + bombStackCapString} bombs</style>. ";
             }
 
@@ -222,30 +226,17 @@ namespace MegalomaniaPlugin
             string skillsReplacementString = "";
             if (doReplacePrimary)
             {
-                string s = primaryReplacementID;
-                switch (primaryReplacementID)
-                {
-                    case "MEGALOMANIA_PRIMARY_NAME":
-                        s = "Conceit";
-                        break;
-                    case "MEGALOMANIA_MONOPOLIZE_NAME":
-                        s = "Monopolize";
-                        break;
-                }
+                string s = skillReplacementLookupEN(primaryReplacementID);
                 skillsReplacementString += $"Replace primary skill with <style=cIsUtility>{s}</style>. ";
+            }
+            if (doReplaceSecondary)
+            {
+                string s = skillReplacementLookupEN(secondaryReplacementID);
+                skillsReplacementString += $"Replace secondary skill with <style=cIsUtility>{s}</style>. ";
             }
             if (doReplaceSpecial)
             {
-                string s = specialReplacementID;
-                switch (specialReplacementID)
-                {
-                    case "MEGALOMANIA_PRIMARY_NAME":
-                        s = "Conceit";
-                        break;
-                    case "MEGALOMANIA_MONOPOLIZE_NAME":
-                        s = "Monopolize";
-                        break;
-                }
+                string s = skillReplacementLookupEN(specialReplacementID);
                 skillsReplacementString += $"Replace special skill with <style=cIsUtility>{s}</style>. ";
             }
 
@@ -254,6 +245,28 @@ namespace MegalomaniaPlugin
             LanguageAPI.AddOverlay("ITEM_LUNARSUN_DESC",
                 bombGenString + transformTimeString + transformStageString + statsString + skillsReplacementString,
             "en");
+        }
+
+        private static string skillReplacementLookupEN(string lookupID)
+        {
+            string s = lookupID;
+            switch (lookupID)
+            {
+                case "MEGALOMANIA_PRIMARY_NAME":
+                    s = "Conceit";
+                    break;
+                case "MEGALOMANIA_MONOPOLIZE_NAME":
+                    s = "Monopolize";
+                    break;
+                case "MEGALOMANIA_BOMB_NAME":
+                    s = "Chimera Bomb";
+                    break;
+                case "MEGALOMANIA_TWINSHOT_NAME":
+                    s = "Twin Shot";
+                    break;
+            }
+                
+            return s;
         }
     }
 }

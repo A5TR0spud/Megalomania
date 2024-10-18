@@ -75,6 +75,8 @@ namespace MegalomaniaPlugin
             SkillLookup = new Dictionary<string, SkillDef>();
             SkillLookup.Add("conceit", ConceitAbility.ConceitSkill);
             SkillLookup.Add("monopolize", MonopolizeAbility.MonopolizeSkill);
+            SkillLookup.Add("bomb", BombAbility.BombSkill);
+            SkillLookup.Add("twinshot", TwinShotAbility.TwinShotSkill);
         }
 
 #nullable enable

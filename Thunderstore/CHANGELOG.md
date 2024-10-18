@@ -4,9 +4,10 @@
 - Added Stack Size Matters and 2 related configurable properties
 - The logbook description of Egocentrism is now altered based on config settings
 - Migrated Primary Replacement to new section *(7. Skills)*
-- Now defaults to replacing primary with Conceit, and immediately corrupting Visions of Heresy to prevent conflict.
+- Now defaults to replacing primary with Conceit, and immediately corrupting Visions of Heresy to prevent conflict or confusion.
 - Rename Primary Enhancement -> Primary Targetting
 - New skill: Monopolize: Crush up to 5 items and gain back double as Egocentrism. Always grants at least 1. 60s cooldown.
+- New skill: Chimera Bomb: Fire a tracking lunar bomb for 480% damage. 2s cooldown.
 - Replaced Conceit icon
 - Conceit now fires in a burst of 3 at a base rate of 8/s
 - Conceit has a base burst per second rate of 1/s

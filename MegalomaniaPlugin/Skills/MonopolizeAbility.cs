@@ -110,7 +110,7 @@ namespace MegalomaniaPlugin.Skills
             {
                 //Util.PlaySound("Play_lunar_exploder_m1_fire", gameObject);
                 //base.characterBody.inventory.GiveItem(DLC1Content.Items.LunarSun);
-                ItemTransferOrb item = ItemTransferOrb.DispatchItemTransferOrb(muzzleLocation, null, DLC1Content.Items.LunarSun.itemIndex, 1, delegate (ItemTransferOrb orb)
+                ItemTransferOrb.DispatchItemTransferOrb(muzzleLocation, null, DLC1Content.Items.LunarSun.itemIndex, 1, delegate (ItemTransferOrb orb)
                 {
                     base.characterBody.inventory.GiveItem(DLC1Content.Items.LunarSun);
                     CharacterMasterNotificationQueue.PushItemNotification(base.characterBody.master, DLC1Content.Items.LunarSun.itemIndex);
@@ -119,49 +119,13 @@ namespace MegalomaniaPlugin.Skills
             }
             else
             {
-                //BUG: orbs get darker over time and then overflow to white or pure red
                 foreach (ItemIndex itemIndex in transList)
                 {
-                    ItemTransferOrb itemTransferOrb = new ItemTransferOrb();
-                    itemTransferOrb.origin = muzzleLocation;
-                    itemTransferOrb.inventoryToGrantTo = null;
-                    itemTransferOrb.itemIndex = itemIndex;
-                    itemTransferOrb.stack = 1;
-                    itemTransferOrb.travelDuration = 0.5f;
-                    itemTransferOrb.target = base.characterBody.mainHurtBox;
-                    itemTransferOrb.onArrival = delegate (ItemTransferOrb orb)
+                    ItemTransferOrb.DispatchItemTransferOrb(muzzleLocation, null, itemIndex, 1, delegate (ItemTransferOrb orb)
                     {
-                        muzzleLocation = aimRay.origin;
-                        GameObject root = base.gameObject;
-
-                        CharacterModel model = base.characterBody.modelLocator.modelTransform.gameObject.GetComponent<CharacterModel>();
-                        List<CharacterModel.ParentedPrefabDisplay> li = model.parentedPrefabDisplays;
-
-                        foreach (CharacterModel.ParentedPrefabDisplay iaa in li)
-                        {
-                            if (iaa.itemIndex == DLC1Content.Items.LunarSun.itemIndex)
-                            {
-                                muzzleLocation = iaa.itemDisplay.transform.gameObject.transform.position;
-                                root = iaa.itemDisplay.transform.gameObject;
-                                break;
-                            }
-                        }
-
-                        ItemTransferOrb b = new ItemTransferOrb();
-                        b.origin = muzzleLocation;
-                        b.inventoryToGrantTo = null;
-                        b.itemIndex = DLC1Content.Items.LunarSun.itemIndex;
-                        b.stack = 1;
-                        b.travelDuration = 0.5f;
-                        b.target = base.characterBody.mainHurtBox;
-                        b.onArrival = delegate (ItemTransferOrb orb)
-                        {
-                            base.characterBody.inventory.GiveItem(DLC1Content.Items.LunarSun);
-                        };
-                        OrbManager.instance.AddOrb(b);
-                    };
-
-                    OrbManager.instance.AddOrb(itemTransferOrb);
+                        base.characterBody.inventory.GiveItem(DLC1Content.Items.LunarSun);
+                        CharacterMasterNotificationQueue.PushItemNotification(base.characterBody.master, DLC1Content.Items.LunarSun.itemIndex);
+                    }, orbDestinationOverride: base.characterBody.mainHurtBox);
                 }
             }
         }
