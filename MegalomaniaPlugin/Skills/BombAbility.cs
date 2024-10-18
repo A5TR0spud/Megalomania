@@ -47,7 +47,7 @@ namespace MegalomaniaPlugin.Skills
             BombSkill.rechargeStock = 1;
             BombSkill.requiredStock = 1;
             BombSkill.stockToConsume = 1;
-            BombSkill.baseRechargeInterval = 2;
+            BombSkill.baseRechargeInterval = 3;
             BombSkill.interruptPriority = InterruptPriority.Skill;
             BombSkill.autoHandleLuminousShot = true;
             BombSkill.icon = Icon;
