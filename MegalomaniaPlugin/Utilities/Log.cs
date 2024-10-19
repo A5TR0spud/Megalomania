@@ -1,6 +1,6 @@
 ﻿using BepInEx.Logging;
 
-namespace MegalomaniaPlugin
+namespace MegalomaniaPlugin.Utilities
 {
     internal static class Log
     {

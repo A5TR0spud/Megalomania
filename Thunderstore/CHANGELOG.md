@@ -6,9 +6,7 @@
 - Migrated Primary Replacement to new section *(7. Skills)*
 - Now defaults to replacing primary with Conceit, and immediately corrupting Visions of Heresy to prevent conflict or confusion.
 - Rename Primary Enhancement -> Primary Targetting
-- New skill: Monopolize: Crush up to 5 items and gain back double as Egocentrism. Always grants at least 1. 60s cooldown.
-- New skill: Chimera Bomb: Fire a tracking lunar bomb for 480% damage. 2s cooldown.
-- New skill: Twin Shot: Fire 6 lunar helices for 6x360% damage.
+- New skills: Monopolize, Chimera Bomb, Twin Shot, Chimera Shell
 - Replaced Conceit icon
 - Conceit now fires in a burst of 3 at a base rate of 8/s
 - Conceit has a base burst per second rate of 1/s
@@ -16,6 +14,8 @@
 - Conceit now has some spread *(0 -> 1)*
 - Conceit now has firing sound effects
 - Conceit projectiles are faster *(80? -> 150)*
+
+*See config for descriptions of new skills.*
 
 *After testing Conceit with exploder muzzle flash, I've elected it too obstructive to include in Conceit. It's instead used in Monopolize.*
 

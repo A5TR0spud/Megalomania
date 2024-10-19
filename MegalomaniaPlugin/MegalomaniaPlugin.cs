@@ -1,7 +1,10 @@
 using BepInEx;
 using BepInEx.Configuration;
 using IL.RoR2.Skills;
+using MegalomaniaPlugin.Buffs;
+using MegalomaniaPlugin.Items;
 using MegalomaniaPlugin.Skills;
+using MegalomaniaPlugin.Utilities;
 using R2API;
 using R2API.Utils;
 using RoR2;
@@ -42,6 +45,7 @@ namespace MegalomaniaPlugin
         public static Sprite EgoMonopolizeSprite;
         public static Sprite EgoBombSprite;
         public static Sprite EgoTwinShotSprite;
+        public static Sprite EgoShellSprite;
         
         #region Constants and Configs
 
@@ -122,9 +126,9 @@ namespace MegalomaniaPlugin
         public static ConfigEntry<bool> ConfigSecondaryReplacement { get; set; }
         public static ConfigEntry<bool> ConfigCorruptHooks { get; set; }
 
-        /*public static ConfigEntry<string> ConfigUtilitySkill { get; set; }
-        public static ConfigEntry<bool> ConfigPrimaryReplacement { get; set; }
-        public static ConfigEntry<bool> ConfigCorruptVisions { get; set; }*/
+        public static ConfigEntry<string> ConfigUtilitySkill { get; set; }
+        public static ConfigEntry<bool> ConfigUtilityReplacement { get; set; }
+        public static ConfigEntry<bool> ConfigCorruptStrides { get; set; }
 
         public static ConfigEntry<string> ConfigSpecialSkill { get; set; }
         public static ConfigEntry<bool> ConfigSpecialReplacement { get; set; }
@@ -153,6 +157,7 @@ namespace MegalomaniaPlugin
             //Add pearl-like stats
             HookLunarSunStats();
 
+            InitBuffs();
             InitItems();
             utils.ParseRarityPriorityList();
             utils.ParseConversionSelectionType();
@@ -213,6 +218,20 @@ namespace MegalomaniaPlugin
                     }
                 }
 
+                RoR2.Skills.SkillDef utilitySkillRep = utils.lookupSkill(ConfigUtilitySkill.Value);
+                if (ConfigUtilityReplacement.Value && (bool)utilitySkillRep)
+                {
+                    if (ConfigCorruptStrides.Value)
+                    {
+                        utils.CorruptItem(self.inventory, RoR2Content.Items.LunarUtilityReplacement.itemIndex, self.master);
+                        self.ReplaceSkillIfItemPresent(skillLocator.utility, DLC1Content.Items.LunarSun.itemIndex, utilitySkillRep);
+                    }
+                    else if (self.inventory.GetItemCount(RoR2Content.Items.LunarUtilityReplacement) == 0)
+                    {
+                        self.ReplaceSkillIfItemPresent(skillLocator.utility, DLC1Content.Items.LunarSun.itemIndex, utilitySkillRep);
+                    }
+                }
+
                 RoR2.Skills.SkillDef specialSkillRep = utils.lookupSkill(ConfigSpecialSkill.Value);
                 if (ConfigSpecialReplacement.Value && (bool)specialSkillRep)
                 {
@@ -237,6 +256,7 @@ namespace MegalomaniaPlugin
             EgoMonopolizeSprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texMonopolizeIcon");
             EgoBombSprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texBombIcon");
             EgoTwinShotSprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texTwinShotIcon");
+            EgoShellSprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texShellIcon");
         }
 
         private void ItemCatalog_SetItemDefs(On.RoR2.ItemCatalog.orig_SetItemDefs orig, ItemDef[] newItemDefs)
@@ -270,12 +290,18 @@ namespace MegalomaniaPlugin
             ItemAPI.Add(new CustomItem(transformToken, displayRules));
         }
 
+        private void InitBuffs()
+        {
+            EgoShelledBuff.initEgoShellBuff();
+        }
+
         private void InitSkills()
         {
             ConceitAbility.initEgoPrimary(EgoPrimarySprite);
             MonopolizeAbility.initEgoMonopolize(EgoMonopolizeSprite, utils);
             BombAbility.initBombAbility(EgoBombSprite);
             TwinShotAbility.initEgoTwinShot(EgoTwinShotSprite);
+            ShellAbility.initEgoShell(EgoShellSprite);
         }
 
         private void CreateConfig()
@@ -468,33 +494,43 @@ namespace MegalomaniaPlugin
             "Conceit: Fire a burst of 3 lunar shards for 3x6y0% damage. Intended to be primary.\n" +
             "Chimera Bomb: Fire a tracking bomb for 480% damage. Intended to be secondary.\n" +
             "Twin Shot: Fire 6 lunar helices for 6x360% damage. Intended to be alt secondary.\n" +
+            "Chimera Shell: Immediately gain barrier equal to 25% of combined max health, up to 50% of combined max health, and jumpstart shield recharge. Damage taken is capped to 10% of max health, speed is halved, and healing is disabled for 7 seconds. Intended to be utility.\n" +
             "Monopolize: Crush up to 5 items. Gain twice the items lost as Egocentrism. Always grants at least 1 Egocentrism. Cooldown 60s. Intended to be special.\n");
             
             ConfigPrimarySkill = Config.Bind("7.1 Skills - Primary", "Skill to Use", "conceit",
                 "What skill to replace primary with.\n" +
-                "Allowed values: conceit, monopolize, bomb, twinshot");
+                "Allowed values: conceit, monopolize, bomb, twinshot, shell");
             ConfigPrimaryReplacement = Config.Bind("7.1 Skills - Primary", "Enable Primary Replacement", true,
                 "If true, holding Egocentrism replaces the primary skill.");
             ConfigCorruptVisions = Config.Bind("7.1 Skills - Primary", "Corrupt Visions of Heresy", true,
-                "If true, Visions of Heresy is corrupted into Egocentrism.\n" +
+                "If true, Visions of Heresy is corrupted into Egocentrism when replacement is enabled.\n" +
                 "If false, Visions of Heresy's \"Hungering Gaze\" skill overrides Ego skill replacement.");
 
             ConfigSecondarySkill = Config.Bind("7.2 Skills - Secondary", "Skill to Use", "bomb",
                 "What skill to replace secondary with.\n" +
-                "Allowed values: conceit, monopolize, bomb, twinshot");
+                "Allowed values: conceit, monopolize, bomb, twinshot, shell");
             ConfigSecondaryReplacement = Config.Bind("7.2 Skills - Secondary", "Enable Secondary Replacement", false,
                 "If true, holding Egocentrism replaces the secondary skill.");
             ConfigCorruptHooks = Config.Bind("7.2 Skills - Secondary", "Corrupt Hooks of Heresy", true,
-                "If true, Hooks of Heresy is corrupted into Egocentrism.\n" +
+                "If true, Hooks of Heresy is corrupted into Egocentrism when replacement is enabled.\n" +
                 "If false, Hooks of Heresy's \"Slicing Maelstrom\" skill overrides Ego skill replacement.");
+
+            ConfigUtilitySkill = Config.Bind("7.3 Skills - Utility", "Skill to Use", "shell",
+                "What skill to replace utility with.\n" +
+                "Allowed values: conceit, monopolize, bomb, twinshot, shell");
+            ConfigUtilityReplacement = Config.Bind("7.3 Skills - Utility", "Enable Utility Replacement", false,
+                "If true, holding Egocentrism replaces the utility skill.");
+            ConfigCorruptStrides = Config.Bind("7.3 Skills - Utility", "Corrupt Strides of Heresy", true,
+                "If true, Strides of Heresy is corrupted into Egocentrism when replacement is enabled.\n" +
+                "If false, Strides of Heresy's \"Shadowfade\" skill overrides Ego skill replacement.");
 
             ConfigSpecialSkill = Config.Bind("7.4 Skills - Special", "Skill to Use", "monopolize",
                 "What skill to replace special with.\n" +
-                "Allowed values: conceit, monopolize, bomb, twinshot");
+                "Allowed values: conceit, monopolize, bomb, twinshot, shell");
             ConfigSpecialReplacement = Config.Bind("7.4 Skills - Special", "Enable Special Replacement", false,
                 "If true, holding Egocentrism replaces the special skill.");
             ConfigCorruptEssence = Config.Bind("7.4 Skills - Special", "Corrupt Essence of Heresy", true,
-                "If true, Essence of Heresy is corrupted into Egocentrism.\n" +
+                "If true, Essence of Heresy is corrupted into Egocentrism when replacement is enabled.\n" +
                 "If false, Essence of Heresy's \"Ruin\" skill overrides Ego skill replacement.");
             #endregion
 

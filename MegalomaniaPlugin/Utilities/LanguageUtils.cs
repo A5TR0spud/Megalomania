@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Text;
 using BepInEx;
 
-namespace MegalomaniaPlugin
+namespace MegalomaniaPlugin.Utilities
 {
     public class LanguageUtils
     {
@@ -41,6 +41,8 @@ namespace MegalomaniaPlugin
         private static string primaryReplacementID;
         private static bool doReplaceSecondary;
         private static string secondaryReplacementID;
+        private static bool doReplaceUtility;
+        private static string utilityReplacementID;
         private static bool doReplaceSpecial;
         private static string specialReplacementID;
 
@@ -78,6 +80,8 @@ namespace MegalomaniaPlugin
             doReplacePrimary = MegalomaniaPlugin.ConfigPrimaryReplacement.Value && !primaryReplacementID.IsNullOrWhiteSpace();
             secondaryReplacementID = utils.lookupSkill(MegalomaniaPlugin.ConfigSecondarySkill.Value.Trim().ToLower()).skillNameToken;
             doReplaceSecondary = MegalomaniaPlugin.ConfigSecondaryReplacement.Value && !secondaryReplacementID.IsNullOrWhiteSpace();
+            utilityReplacementID = utils.lookupSkill(MegalomaniaPlugin.ConfigUtilitySkill.Value.Trim().ToLower()).skillNameToken;
+            doReplaceUtility = MegalomaniaPlugin.ConfigUtilityReplacement.Value && !utilityReplacementID.IsNullOrWhiteSpace();
             specialReplacementID = utils.lookupSkill(MegalomaniaPlugin.ConfigSpecialSkill.Value.Trim().ToLower()).skillNameToken;
             doReplaceSpecial = MegalomaniaPlugin.ConfigSpecialReplacement.Value && !specialReplacementID.IsNullOrWhiteSpace();
 
@@ -126,7 +130,7 @@ namespace MegalomaniaPlugin
                 }
 
                 bombGenString = $"Every <style=cIsUtility>{bombInitialGenerationTime}</style>{bombRateString} seconds, " +
-                    $"gain an <style=cIsDamage>orbiting bomb</style> that detonates on impact for <style=cIsDamage>{bombInitDamage*100}%</style>{bombStackDamageString} damage, " +
+                    $"gain an <style=cIsDamage>orbiting bomb</style> that detonates on impact for <style=cIsDamage>{bombInitDamage * 100}%</style>{bombStackDamageString} damage, " +
                     $"up to a maximum of <style=cIsUtility>{bombCapInit + bombStackCapString} bombs</style>. ";
             }
 
@@ -234,6 +238,11 @@ namespace MegalomaniaPlugin
                 string s = skillReplacementLookupEN(secondaryReplacementID);
                 skillsReplacementString += $"Replace secondary skill with <style=cIsUtility>{s}</style>. ";
             }
+            if (doReplaceUtility)
+            {
+                string s = skillReplacementLookupEN(utilityReplacementID);
+                skillsReplacementString += $"Replace utility skill with <style=cIsUtility>{s}</style>. ";
+            }
             if (doReplaceSpecial)
             {
                 string s = skillReplacementLookupEN(specialReplacementID);
@@ -264,8 +273,11 @@ namespace MegalomaniaPlugin
                 case "MEGALOMANIA_TWINSHOT_NAME":
                     s = "Twin Shot";
                     break;
+                case "MEGALOMANIA_SHELL_NAME":
+                    s = "Chimera Shell";
+                    break;
             }
-                
+
             return s;
         }
     }

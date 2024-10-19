@@ -14,7 +14,7 @@ using UnityEngine.UI;
 using UnityEngine.UIElements;
 using static UnityEngine.UI.GridLayoutGroup;
 
-namespace MegalomaniaPlugin
+namespace MegalomaniaPlugin.Utilities
 {
     public class Utils
     {
@@ -25,7 +25,7 @@ namespace MegalomaniaPlugin
         public Dictionary<ItemIndex, int> parsedItemPriorityList;
 
         //Selection mode
-        public Utils.ConversionSelectionType parsedConversionSelectionType;
+        public ConversionSelectionType parsedConversionSelectionType;
 
         //Items to convert to
         public Dictionary<ItemIndex, int> parsedItemConvertToList;
@@ -77,6 +77,7 @@ namespace MegalomaniaPlugin
             SkillLookup.Add("monopolize", MonopolizeAbility.MonopolizeSkill);
             SkillLookup.Add("bomb", BombAbility.BombSkill);
             SkillLookup.Add("twinshot", TwinShotAbility.TwinShotSkill);
+            SkillLookup.Add("shell", ShellAbility.ShellSkill);
         }
 
 #nullable enable
@@ -144,10 +145,10 @@ namespace MegalomaniaPlugin
                 //modality select item to transform
                 switch (parsedConversionSelectionType)
                 {
-                    case Utils.ConversionSelectionType.weighted:
+                    case ConversionSelectionType.weighted:
                         toTransform = getWeightedDictKey(weightedInventory, transformRng);
                         break;
-                    case Utils.ConversionSelectionType.priority:
+                    case ConversionSelectionType.priority:
                         toTransform = getPriorityDictKey(weightedInventory, transformRng);
                         break;
                 }
@@ -255,7 +256,7 @@ namespace MegalomaniaPlugin
             if (MegalomaniaPlugin.ConfigStackSizeMatters.Value)
             {
                 double toAdd = 0;
-                toAdd += (double)weight * (double)(itemCount - 1.0) * MegalomaniaPlugin.ConfigStackSizeMultiplier.Value;
+                toAdd += weight * (double)(itemCount - 1.0) * MegalomaniaPlugin.ConfigStackSizeMultiplier.Value;
                 toAdd += (double)(itemCount - 1.0) * MegalomaniaPlugin.ConfigStackSizeAdder.Value;
                 weight += (int)toAdd;
             }
@@ -350,7 +351,7 @@ namespace MegalomaniaPlugin
                 return 0f;
             else if (diminishing)
                 //diminishing returns
-                return max - max * (float)Math.Pow(1f - (perStack / max), stacksize);
+                return max - max * (float)Math.Pow(1f - perStack / max, stacksize);
             else if (max > 0)
                 //capped linear
                 return Math.Min(perStack * stacksize, max);
@@ -410,14 +411,14 @@ namespace MegalomaniaPlugin
         public void ParseConversionSelectionType()
         {
             string toTest = MegalomaniaPlugin.ConfigConversionSelectionType.Value.Trim().ToLower();
-            if (Enum.TryParse(toTest, out Utils.ConversionSelectionType conversionType))
+            if (Enum.TryParse(toTest, out ConversionSelectionType conversionType))
             {
                 parsedConversionSelectionType = conversionType;
                 return;
             }
 
             Log.Warning($"Invalid conversion selection type: `{toTest}`. Defaulting to weighted.");
-            parsedConversionSelectionType = Utils.ConversionSelectionType.weighted;
+            parsedConversionSelectionType = ConversionSelectionType.weighted;
             return;
         }
 
@@ -452,7 +453,7 @@ namespace MegalomaniaPlugin
                     continue;
                 }
                 //if the rarity is undefined, skip
-                if (!Enum.TryParse(tierString, out Utils.ItemTierLookup tier))
+                if (!Enum.TryParse(tierString, out ItemTierLookup tier))
                 {
                     Log.Warning($"(Rarity:Priority) Invalid rarity: `{rP}`");
                     continue;

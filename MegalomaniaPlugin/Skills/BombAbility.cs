@@ -64,7 +64,19 @@ namespace MegalomaniaPlugin.Skills
             duration = baseDuration / attackSpeedStat;
             Ray aimRay = GetAimRay();
             StartAimMode(aimRay, 2f, false);
+
             fire();
+
+            if (base.isAuthority && (bool)base.characterBody && (bool)base.characterBody.characterMotor)
+            {
+                float height = (base.characterBody.characterMotor.isGrounded ? 0.5f : 1f);
+                float num4 = (base.characterBody.characterMotor ? base.characterBody.characterMotor.mass : 1f);
+                float acceleration2 = base.characterBody.acceleration;
+                //float s = 0.14f * base.characterBody.moveSpeed;
+                float num5 = Trajectory.CalculateInitialYSpeedForHeight(height, 0f - acceleration2);
+                base.characterBody.characterMotor.velocity = new Vector3(0, 0, 0);
+                base.characterBody.characterMotor.ApplyForce((0f - num5) * num4 * aimRay.direction, true, false);
+            }
 
             //Chat.AddMessage("conceit fired");
 
@@ -103,7 +115,21 @@ namespace MegalomaniaPlugin.Skills
             }
             //TrajectoryAimAssist.ApplyTrajectoryAimAssist(ref aimRay, projectilePrefab, base.gameObject, 50);
             Util.PlaySound("Play_lunar_exploder_m1_fire", gameObject);//, attackSpeedStat);
-            ProjectileManager.instance.FireProjectile(projectilePrefab, aimRay.origin + aimRay.direction * 1.0f, Util.QuaternionSafeLookRotation(aimRay.direction), gameObject, damageStat * damageCoefficient, force, RollCrit());
+            Vector3 aim = aimRay.direction.normalized;
+            Vector3 vel = base.characterMotor.velocity.normalized;
+            float dot = aim.x * vel.x + aim.y * vel.y + aim.z + vel.z;
+            if (dot < 0) dot = 0;
+            /*GameObject proj = GameObject.Instantiate(projectilePrefab);
+            Collider col = proj.GetComponent<Collider>();
+            col.enabled = false;
+            col.*/
+            ProjectileManager.instance.FireProjectile(
+                projectilePrefab,
+                aimRay.origin
+                + aimRay.direction * 1.8f
+                + aimRay.direction * base.characterBody.moveSpeed * dot * 0.1423f
+                + base.characterBody.characterMotor.velocity * dot * 0.1423f,
+                Util.QuaternionSafeLookRotation(aimRay.direction), gameObject, damageStat * damageCoefficient, force, RollCrit());
         }
 
         public override InterruptPriority GetMinimumInterruptPriority()

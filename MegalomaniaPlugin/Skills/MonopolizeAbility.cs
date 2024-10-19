@@ -1,4 +1,5 @@
 ﻿using EntityStates;
+using MegalomaniaPlugin.Utilities;
 using R2API;
 using R2API.Utils;
 using RoR2;
