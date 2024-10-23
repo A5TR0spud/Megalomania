@@ -51,6 +51,7 @@ Twin Shots: Fire 6 lunargolem bombs. 6s cooldown.
 Shell: Passively converts half of health to shields. On use: gain 50% barrier and immediately begin shield recharging. cooldown: 2x shield recharge time + 7s
 ???: Damage allies in a 16m radius for 10% of their max health. Heal 10% of your max health per ally damaged. Gain War Cry for 1 second per ally damaged. Cooldown: Duration + 10s.
 Monopolize: Crush a few items (configurable) and gain more Egocentrism than the amount of items you lost. 30s cooldown.
+Chimera Minigun: lunar wisp minigun lol
 
 (float) Bomb Creation Initial Rate (IR): 3 seconds
 (float) Bomb Creation Stacking Rate Multiplier (SRM): 0.75
@@ -78,7 +79,7 @@ Monopolize: Crush a few items (configurable) and gain more Egocentrism than the 
 	= Set to a negative number for unlimited max time
 
 (bool)  Soulbind: false
-	= If true, damage taken be Egocentrism holders is split between all nearby allies.
+	= If true, damage taken by Egocentrism holders is split between all nearby allies.
 
 (bool)  Regenerating Ego: false
 	= If true, then regenerating scrap that gets absorbed into Egocentrism is consumed instead of destroyed

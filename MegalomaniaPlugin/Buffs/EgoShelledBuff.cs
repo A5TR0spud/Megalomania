@@ -32,30 +32,31 @@ namespace MegalomaniaPlugin.Buffs
 
             EgoShellBuff.iconSprite = MegalomaniaPlugin.megalomaniaAssetBundle.LoadAsset<Sprite>("texEgoShellBuff");
 
-            EgoShellBuff.buffColor = new Color(0.38039216f, 0.6392157f, 0.9372549f, 1f);
+            EgoShellBuff.buffColor = new Color(0.458823529412f, 0.890196078431f, 0.960784313725f, 1f);
+            //new Color(0.38039216f, 0.6392157f, 0.9372549f, 1f);
             EgoShellBuff.name = "megalomaniaShellBuff";
 
             ContentAddition.AddBuffDef(EgoShellBuff);
 
-            On.RoR2.CharacterModel.UpdateOverlays += CharacterModel_UpdateOverlays;
             On.RoR2.HealthComponent.Heal += HealthComponent_Heal;
-            //On.RoR2.HealthComponent.SendDamageDealt += HealthComponent_SendDamageDealt;
+            On.RoR2.CharacterBody.OnBuffFirstStackGained += CharacterBody_OnBuffFirstStackGained;
+            On.RoR2.CharacterBody.OnBuffFinalStackLost += CharacterBody_OnBuffFinalStackLost;
             IL.RoR2.HealthComponent.TakeDamageProcess += (il) =>
             {
                 ILCursor c = new ILCursor(il);
                 c.GotoNext(
                     //0
-                    x => x.MatchLdarg(0), //this
+                    x => x.MatchLdarg(0),   //this
                     //1
-                    x => x.MatchCall<HealthComponent>("get_fullHealth"),
+                    x => x.MatchCallOrCallvirt<HealthComponent>("get_fullHealth"),
                     //2
                     x => x.MatchLdcR4(0.1f),
                     //3
                     x => x.MatchMul(),
                     //4
-                    x => x.MatchStloc(7), //set num4
+                    x => x.MatchStloc(7),   //set num4
                     //5
-                    x => x.MatchLdarg(0) //end if
+                    x => x.MatchLdarg(0)
                     //6: insert here
                     );
                 c.Index += 6; //insert there
@@ -81,6 +82,53 @@ namespace MegalomaniaPlugin.Buffs
 
                 //Log.Debug(il.ToString());
             };
+            IL.RoR2.CharacterModel.UpdateOverlayStates += (il) =>
+            {
+                ILCursor c = new ILCursor(il);
+                c.GotoNext(
+                    //0
+                    x => x.MatchLdarg(0),
+                    //1
+                    x => x.MatchLdfld(typeof(CharacterModel).GetField("body")),
+                    //2
+                    x => x.MatchLdsfld(typeof(RoR2Content.Buffs).GetField("LunarShell")),
+                    //3
+                    x => x.MatchCallOrCallvirt<CharacterBody>("HasBuff")
+                    //4
+                    );
+                c.Index += 4; //insert there
+                //stack already contains boolean from HasBuff(LunarShell)
+                c.Emit(OpCodes.Ldarg_0);
+                c.Emit(OpCodes.Ldfld, typeof(CharacterModel).GetField("body"));
+                c.EmitDelegate<Func< bool, CharacterBody, bool>>((hasLunarShell, cb) =>
+                {
+                    return hasLunarShell || cb.HasBuff(EgoShellBuff);
+                });
+            };
+            IL.RoR2.CharacterModel.UpdateOverlays += (il) =>
+            {
+                ILCursor c = new ILCursor(il);
+                c.GotoNext(
+                    //0
+                    x => x.MatchLdsfld(typeof(CharacterModel).GetField("lunarGolemShieldMaterial")),
+                    //1
+                    x => x.MatchLdarg(0),
+                    //2
+                    x => x.MatchLdfld(typeof(CharacterModel).GetField("body")),
+                    //3
+                    x => x.MatchLdsfld(typeof(RoR2Content.Buffs).GetField("LunarShell")),
+                    //4
+                    x => x.MatchCallOrCallvirt<CharacterBody>("HasBuff")
+                    //5
+                    );
+                c.Index += 5; //insert there
+                c.Emit(OpCodes.Ldarg_0);
+                c.Emit(OpCodes.Ldfld, typeof(CharacterModel).GetField("body"));
+                c.EmitDelegate<Func<bool, CharacterBody, bool>>((hasLunarShell, cb) =>
+                {
+                    return hasLunarShell || cb.HasBuff(EgoShellBuff);
+                });
+            };
 
             RecalculateStatsAPI.GetStatCoefficients += (sender, args) =>
             {
@@ -94,25 +142,37 @@ namespace MegalomaniaPlugin.Buffs
             };
         }
 
-        /*private static void HealthComponent_SendDamageDealt(On.RoR2.HealthComponent.orig_SendDamageDealt orig, DamageReport damageReport)
+        private static void CharacterBody_OnBuffFinalStackLost(On.RoR2.CharacterBody.orig_OnBuffFinalStackLost orig, CharacterBody self, BuffDef buffDef)
         {
-            HealthComponent healthComponent = damageReport.victim;
-            if (healthComponent.body && healthComponent.body.HasBuff(EgoShellBuff))
-            {
-                float damage = damageReport.damageInfo.damage;
-                damage -= healthComponent.barrier;
-                if (damage > healthComponent.fullCombinedHealth * 0.1f)
-                {
-                    damage = healthComponent.fullCombinedHealth * 0.1f;
-                }
-                damage += healthComponent.barrier;
-                damage = 1;
-                damageReport.damageInfo.damage = damage;
-                damageReport.damageDealt = damage;
-            }
-            orig(damageReport);
-        }*/
+            orig(self, buffDef);
+            if (buffDef == EgoShellBuff)
+                reloadOverlays(self);
+        }
 
+        private static void CharacterBody_OnBuffFirstStackGained(On.RoR2.CharacterBody.orig_OnBuffFirstStackGained orig, CharacterBody self, BuffDef buffDef)
+        {
+            orig(self, buffDef);
+            if (buffDef == EgoShellBuff)
+                reloadOverlays(self);
+        }
+
+        private static void reloadOverlays(CharacterBody body)
+        {
+            ModelLocator component = body.modelLocator;
+            if (!component)
+            {
+                return;
+            }
+            Transform modelTransform = component.modelTransform;
+            if ((bool)modelTransform)
+            {
+                CharacterModel component2 = modelTransform.GetComponent<CharacterModel>();
+                if ((bool)component2)
+                {
+                    component2.UpdateOverlays();
+                }
+            }
+        }
 
         private static float HealthComponent_Heal(On.RoR2.HealthComponent.orig_Heal orig, HealthComponent self, float amount, ProcChainMask procChainMask, bool nonRegen)
         {
@@ -121,29 +181,6 @@ namespace MegalomaniaPlugin.Buffs
                 amount *= 0.5f;
             }
             return orig(self, amount, procChainMask, nonRegen);
-        }
-
-        private static void CharacterModel_UpdateOverlays(On.RoR2.CharacterModel.orig_UpdateOverlays orig, CharacterModel self)
-        {
-            orig(self);
-
-            Material lunarGolemShieldMaterial = self.GetFieldValue<Material>("lunarGolemShieldMaterial");
-            int activeOverlayCount = self.GetFieldValue<int>("activeOverlayCount");
-            Material[] currentOverlays = self.GetFieldValue<Material[]>("currentOverlays");
-            int maxOverlays = self.GetFieldValue<int>("maxOverlays");
-
-            CharacterBody body = self.body;
-
-            if ((bool)body)
-            {
-                if (activeOverlayCount < maxOverlays && body.HasBuff(EgoShellBuff))
-                {
-                    currentOverlays[activeOverlayCount++] = lunarGolemShieldMaterial;
-                }
-
-                self.SetFieldValue("activeOverlayCount", activeOverlayCount);
-                self.SetFieldValue("currentOverlays", currentOverlays);
-            }
         }
     }
 }

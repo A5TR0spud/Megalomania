@@ -1,4 +1,9 @@
 
+## 1.1.1
+
+- Adjusted Chimera Shell buff color to distinguish it from the vanilla Lunar Shell
+- Fixed Chimera Shell visual overlay not syncing with buff
+
 ## 1.1.0 - *Skills*
 
 - Added Stack Size Matters and 2 related configurable properties
