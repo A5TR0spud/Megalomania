@@ -1,27 +1,34 @@
 ﻿using BepInEx;
+using MegalomaniaPlugin.Skills;
 using RoR2;
+using RoR2.Orbs;
+using RoR2.Skills;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.UI;
+using UnityEngine.UIElements;
+using static UnityEngine.UI.GridLayoutGroup;
 
-namespace MegalomaniaPlugin
+namespace MegalomaniaPlugin.Utilities
 {
     public class Utils
     {
         //Parsed Rarity:Priority List
-        private Dictionary<ItemTier, int> parsedRarityPriorityList;
+        public Dictionary<ItemTier, int> parsedRarityPriorityList;
 
         //Parsed Item:Priority List
-        private Dictionary<ItemIndex, int> parsedItemPriorityList;
+        public Dictionary<ItemIndex, int> parsedItemPriorityList;
 
         //Selection mode
-        private Utils.ConversionSelectionType parsedConversionSelectionType;
+        public ConversionSelectionType parsedConversionSelectionType;
 
         //Items to convert to
-        private Dictionary<ItemIndex, int> parsedItemConvertToList;
+        public Dictionary<ItemIndex, int> parsedItemConvertToList;
 
         //Thank you ConfigEgocentrism by Judgy53 for code reference:
         //https://github.com/Judgy53/ConfigEgocentrism/blob/main/ConfigEgocentrism/ConfigEgocentrismPlugin.cs
@@ -61,23 +68,60 @@ namespace MegalomaniaPlugin
             priority = 1
         }
 
-        public void TransformItems(Inventory inventory, int amount, Xoroshiro128Plus transformRng, CharacterMaster master)
+        private Dictionary<string, SkillDef> SkillLookup { get; set; }
+
+        public void initSkillsList()
         {
+            SkillLookup = new Dictionary<string, SkillDef>();
+            SkillLookup.Add("conceit", ConceitAbility.ConceitSkill);
+            SkillLookup.Add("monopolize", MonopolizeAbility.MonopolizeSkill);
+            SkillLookup.Add("bomb", BombAbility.BombSkill);
+            SkillLookup.Add("twinshot", TwinShotAbility.TwinShotSkill);
+            SkillLookup.Add("shell", ShellAbility.ShellSkill);
+        }
+
+#nullable enable
+        public SkillDef? lookupSkill(string str)
+        {
+            if (SkillLookup.TryGetValue(str.ToLower().Trim(), out SkillDef sdef))
+            {
+                return sdef;
+            }
+            return null;
+        }
+#nullable restore
+
+        public void CorruptItem(Inventory inventory, ItemIndex toCorrupt, CharacterMaster master)
+        {
+            int ego = inventory.GetItemCount(DLC1Content.Items.LunarSun);
+            if (ego < 1) return;
+            int count = inventory.GetItemCount(toCorrupt);
+            if (count > 0)
+            {
+                inventory.RemoveItem(toCorrupt, count);
+                inventory.GiveItem(DLC1Content.Items.LunarSun, count);
+                CharacterMasterNotificationQueue.SendTransformNotification(master, toCorrupt, DLC1Content.Items.LunarSun.itemIndex, CharacterMasterNotificationQueue.TransformationType.LunarSun);
+            }
+        }
+
+        public List<ItemIndex> TransformItems(Inventory inventory, int amount, Xoroshiro128Plus transformRng, CharacterMaster master, bool ignoreCap = false, bool notifUI = true)
+        {
+            List<ItemIndex> toReturn = new List<ItemIndex>();
             if (!NetworkServer.active)
             {
                 Log.Warning("[Server] function 'TransformItems' called on client");
-                return;
+                return toReturn;
             }
 
             if (!inventory || !master)
-                return;
+                return toReturn;
 
             if (amount < 1)
-                return;
+                return toReturn;
 
             if (parsedItemConvertToList.Count < 1)
             {
-                return;
+                return toReturn;
             }
 
             if (transformRng == null)
@@ -101,10 +145,10 @@ namespace MegalomaniaPlugin
                 //modality select item to transform
                 switch (parsedConversionSelectionType)
                 {
-                    case Utils.ConversionSelectionType.weighted:
+                    case ConversionSelectionType.weighted:
                         toTransform = getWeightedDictKey(weightedInventory, transformRng);
                         break;
-                    case Utils.ConversionSelectionType.priority:
+                    case ConversionSelectionType.priority:
                         toTransform = getPriorityDictKey(weightedInventory, transformRng);
                         break;
                 }
@@ -113,7 +157,7 @@ namespace MegalomaniaPlugin
                 {
                     Log.Error("Egocentrism tried to convert an item but something went wrong. Did you forget to add an enum or function?\n" +
                         $"parsedConversionSelectionType: '{parsedConversionSelectionType}'");
-                    return;
+                    return toReturn;
                 }
 
                 List<ItemIndex> toGiveList = getWeightedDictKeyAndBackup(parsedItemConvertToList, transformRng);
@@ -137,7 +181,7 @@ namespace MegalomaniaPlugin
                     g++;
                     if (g >= weightedInventory.Count)
                     {
-                        return;
+                        return toReturn;
                     }
                     continue;
                 }
@@ -146,19 +190,77 @@ namespace MegalomaniaPlugin
                 inventory.GiveItem(toGive);
 
                 //balance transformation over time
-                inventory.GiveItem(MegalomaniaPlugin.transformToken, 1 + MegalomaniaPlugin.ConfigMaxTransformationsPerStageStacking.Value);
+                if (!ignoreCap)
+                    inventory.GiveItem(MegalomaniaPlugin.transformToken, 1 + MegalomaniaPlugin.ConfigMaxTransformationsPerStageStacking.Value);
+
+                toReturn.Add(toTransform);
 
                 //inform owner that ego happened
-                CharacterMasterNotificationQueue.SendTransformNotification(master, toTransform, toGive, CharacterMasterNotificationQueue.TransformationType.LunarSun);
+                if (notifUI)
+                {
+                    CharacterMasterNotificationQueue.SendTransformNotification(master, toTransform, toGive, CharacterMasterNotificationQueue.TransformationType.LunarSun);
+                }
 
-                //remove item from possible selections if it no longer exists
+                //remove item from possible selections if it no longer exists, and re-weight it if stack size matters
                 if (inventory.GetItemCount(toTransform) < 1)
                 {
                     weightedInventory.Remove(toTransform);
                 }
+                else if (MegalomaniaPlugin.ConfigStackSizeMatters.Value)
+                {
+                    weightedInventory[toTransform] = weighSingleItem(toTransform, inventory.GetItemCount(toTransform));
+                }
 
                 amount--;
             }
+
+            return toReturn;
+        }
+
+        public int weighSingleItem(ItemIndex itemIndex, int itemCount)
+        {
+            //don't convert egocentrism
+            if (itemIndex == DLC1Content.Items.LunarSun.itemIndex)
+            {
+                return -1;
+            }
+            //don't convert things that don't exist
+            ItemDef itemDef = ItemCatalog.GetItemDef(itemIndex);
+            if (!(bool)itemDef)
+            {
+                return -1;
+            }
+            //don't convert untiered items
+            if (itemDef.tier == ItemTier.NoTier)
+            {
+                return -1;
+            }
+            //get tier weight
+            int weight = 0;
+            if (!parsedRarityPriorityList.TryGetValue(itemDef.tier, out weight))
+            {
+                weight = 0;
+            }
+            //don't convert blacklisted items
+            int itemWeight = 0;
+            if (parsedItemPriorityList.TryGetValue(itemIndex, out itemWeight) && itemWeight == 0)
+            {
+                return -1;
+            }
+            weight += itemWeight;
+            //discard combination blacklisted items
+            if (weight <= 0)
+            {
+                return -1;
+            }
+            if (MegalomaniaPlugin.ConfigStackSizeMatters.Value)
+            {
+                double toAdd = 0;
+                toAdd += weight * (double)(itemCount - 1.0) * MegalomaniaPlugin.ConfigStackSizeMultiplier.Value;
+                toAdd += (double)(itemCount - 1.0) * MegalomaniaPlugin.ConfigStackSizeAdder.Value;
+                weight += (int)toAdd;
+            }
+            return weight;
         }
 
         public Dictionary<ItemIndex, int> weighInventory(Inventory inventory)
@@ -168,36 +270,7 @@ namespace MegalomaniaPlugin
             Dictionary<ItemIndex, int> weightedInventory = new Dictionary<ItemIndex, int>();
             foreach (ItemIndex itemIndex in inventoryItemsList)
             {
-                //don't convert egocentrism
-                if (itemIndex == DLC1Content.Items.LunarSun.itemIndex)
-                {
-                    continue;
-                }
-                //don't convert things that don't exist
-                ItemDef itemDef = ItemCatalog.GetItemDef(itemIndex);
-                if (!(bool)itemDef)
-                {
-                    continue;
-                }
-                //don't convert untiered items
-                if (itemDef.tier == ItemTier.NoTier)
-                {
-                    continue;
-                }
-                //get tier weight
-                int weight = 0;
-                if (!parsedRarityPriorityList.TryGetValue(itemDef.tier, out weight))
-                {
-                    weight = 0;
-                }
-                //don't convert blacklisted items
-                int itemWeight = 0;
-                if (parsedItemPriorityList.TryGetValue(itemIndex, out itemWeight) && itemWeight == 0)
-                {
-                    continue;
-                }
-                weight += itemWeight;
-                //discard combination blacklisted items
+                int weight = weighSingleItem(itemIndex, inventory.GetItemCount(itemIndex));
                 if (weight <= 0)
                 {
                     continue;
@@ -278,7 +351,7 @@ namespace MegalomaniaPlugin
                 return 0f;
             else if (diminishing)
                 //diminishing returns
-                return max - max * (float)Math.Pow(1f - (perStack / max), stacksize);
+                return max - max * (float)Math.Pow(1f - perStack / max, stacksize);
             else if (max > 0)
                 //capped linear
                 return Math.Min(perStack * stacksize, max);
@@ -338,14 +411,14 @@ namespace MegalomaniaPlugin
         public void ParseConversionSelectionType()
         {
             string toTest = MegalomaniaPlugin.ConfigConversionSelectionType.Value.Trim().ToLower();
-            if (Enum.TryParse(toTest, out Utils.ConversionSelectionType conversionType))
+            if (Enum.TryParse(toTest, out ConversionSelectionType conversionType))
             {
                 parsedConversionSelectionType = conversionType;
                 return;
             }
 
             Log.Warning($"Invalid conversion selection type: `{toTest}`. Defaulting to weighted.");
-            parsedConversionSelectionType = Utils.ConversionSelectionType.weighted;
+            parsedConversionSelectionType = ConversionSelectionType.weighted;
             return;
         }
 
@@ -380,7 +453,7 @@ namespace MegalomaniaPlugin
                     continue;
                 }
                 //if the rarity is undefined, skip
-                if (!Enum.TryParse(tierString, out Utils.ItemTierLookup tier))
+                if (!Enum.TryParse(tierString, out ItemTierLookup tier))
                 {
                     Log.Warning($"(Rarity:Priority) Invalid rarity: `{rP}`");
                     continue;

@@ -34,11 +34,23 @@ Config Options:
 (bool)  Bomb Generation Enabled: true
 	= If false, disables bombs completely
 
-PASSIVE EGO: Perfection: Convert half of health to shields.
-
-SECONDARY EGO: ???: Fire 6 lunargolem bombs. 5s cooldown.
-UTILITY EGO: ???: Shell. Idk what that does but i saw the state for lunargolem.
-SPECIAL EGO: Monopolize: Crush a few items (configurable) and gain more Egocentrism than the amount of items you lost. 30s cooldown.
+List of skill slots (primary, secondary, etc) and an Enum of what skill to put in that slot
+(Enum)  Primary: Conceit
+(bool)  Replace Primary: false
+(Enum)  Secondary: Twin Shots
+(bool)  Replace Secondary: false
+(Enum)  Utility: Conceit
+(bool)  Replace Utility: false
+(Enum)  Special: Monopolize
+(bool)  Replace Special: false
+Conceit: Fire a lunar shard for 360% damage. Max: 3. Recharge: 2s for all stock. Firerate: 3/s.
+Convergence: Focus your orbiting bombs to an enemy in view.
+???: Fire a lunarwisp tracking bomb. Cooldown: 6s.
+???: Fire lunarwisp minigun for up to 6 seconds. Cooldown begins on skill end: 6 seconds.
+Twin Shots: Fire 6 lunargolem bombs. 6s cooldown.
+Shell: Passively converts half of health to shields. On use: gain 50% barrier and immediately begin shield recharging. cooldown: 2x shield recharge time + 7s
+???: Damage allies in a 16m radius for 10% of their max health. Heal 10% of your max health per ally damaged. Gain War Cry for 1 second per ally damaged. Cooldown: Duration + 10s.
+Monopolize: Crush a few items (configurable) and gain more Egocentrism than the amount of items you lost. 30s cooldown.
 
 (float) Bomb Creation Initial Rate (IR): 3 seconds
 (float) Bomb Creation Stacking Rate Multiplier (SRM): 0.75
@@ -53,6 +65,9 @@ SPECIAL EGO: Monopolize: Crush a few items (configurable) and gain more Egocentr
 (float) Bomb Initial Range Meters: 15
 (float) Bomb Stacking Range Meters: 2.5
 
+(bool)  Stack Ignorance: true
+	= True: doesn't care about stack size, randomly chooses type of item.
+	= False: weights are multiplied by how many of that item you have
 (float) Conversion Timer (T): 60 seconds
 	= Set to a negative number to disable conversion altogether. Not recommended.
 (float) Conversion Timer Stacking Multiplier (TM): 1

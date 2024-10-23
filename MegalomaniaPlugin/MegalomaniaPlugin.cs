@@ -1,5 +1,10 @@
 using BepInEx;
 using BepInEx.Configuration;
+using IL.RoR2.Skills;
+using MegalomaniaPlugin.Buffs;
+using MegalomaniaPlugin.Items;
+using MegalomaniaPlugin.Skills;
+using MegalomaniaPlugin.Utilities;
 using R2API;
 using R2API.Utils;
 using RoR2;
@@ -33,10 +38,14 @@ namespace MegalomaniaPlugin
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "A5TR0spud";
         public const string PluginName = "Megalomania";
-        public const string PluginVersion = "1.0.1";
+        public const string PluginVersion = "1.1.0";
 
         public static AssetBundle megalomaniaAssetBundle;
         public static Sprite EgoPrimarySprite;
+        public static Sprite EgoMonopolizeSprite;
+        public static Sprite EgoBombSprite;
+        public static Sprite EgoTwinShotSprite;
+        public static Sprite EgoShellSprite;
         
         #region Constants and Configs
 
@@ -66,7 +75,6 @@ namespace MegalomaniaPlugin
         #region bomb toggles
         public static ConfigEntry<bool> ConfigEnableBombs { get; set; }
         public static ConfigEntry<bool> ConfigBombStacking { get; set; }
-        public static ConfigEntry<bool> ConfigPrimaryReplacement { get; set; }
         public static ConfigEntry<bool> ConfigPrimaryEnhancement { get; set; }
         public static ConfigEntry<bool> ConfigPassiveBombAttack { get; set; }
         //public static ConfigEntry<bool> ConfigOnHitBombAttack { get; set; }
@@ -98,10 +106,33 @@ namespace MegalomaniaPlugin
         #endregion
 
         #region transform rules
+        public static ConfigEntry<bool> ConfigStackSizeMatters {  get; set; }
+        public static ConfigEntry<double> ConfigStackSizeMultiplier { get; set; }
+        public static ConfigEntry<double> ConfigStackSizeAdder { get; set; }
         public static ConfigEntry<string> ConfigConversionSelectionType { get; set; }
         public static ConfigEntry<string> ConfigItemsToConvertTo { get; set; }
         public static ConfigEntry<string> ConfigRarityPriorityList { get; set; }
         public static ConfigEntry<string> ConfigItemPriorityList { get; set; }
+        #endregion
+
+        #region skills
+        public static ConfigEntry<string> ConfigSkillsInfo { get; set; }
+
+        public static ConfigEntry<string> ConfigPrimarySkill {  get; set; }
+        public static ConfigEntry<bool> ConfigPrimaryReplacement { get; set; }
+        public static ConfigEntry<bool> ConfigCorruptVisions { get; set; }
+
+        public static ConfigEntry<string> ConfigSecondarySkill { get; set; }
+        public static ConfigEntry<bool> ConfigSecondaryReplacement { get; set; }
+        public static ConfigEntry<bool> ConfigCorruptHooks { get; set; }
+
+        public static ConfigEntry<string> ConfigUtilitySkill { get; set; }
+        public static ConfigEntry<bool> ConfigUtilityReplacement { get; set; }
+        public static ConfigEntry<bool> ConfigCorruptStrides { get; set; }
+
+        public static ConfigEntry<string> ConfigSpecialSkill { get; set; }
+        public static ConfigEntry<bool> ConfigSpecialReplacement { get; set; }
+        public static ConfigEntry<bool> ConfigCorruptEssence { get; set; }
         #endregion
 
         #endregion
@@ -126,13 +157,16 @@ namespace MegalomaniaPlugin
             //Add pearl-like stats
             HookLunarSunStats();
 
+            InitBuffs();
             InitItems();
-            InitSkills();
-
             utils.ParseRarityPriorityList();
+            utils.ParseConversionSelectionType();
+            InitSkills();
+            utils.initSkillsList();
+
             //parse items after items have loaded
             On.RoR2.ItemCatalog.SetItemDefs += ItemCatalog_SetItemDefs;
-            utils.ParseConversionSelectionType(); 
+            
 
             //Helper for transform time modality (benthic and timed max)
             //Clears counter for timed max, and does the conversion for benthic
@@ -146,26 +180,83 @@ namespace MegalomaniaPlugin
 
             //Override Egocentrism code, haha. Sorry mate.
             megalomaniaEgoBehavior.init(utils);
+
+            LanguageUtils.init(utils);
         }
 
         private void CharacterBody_OnInventoryChanged(On.RoR2.CharacterBody.orig_OnInventoryChanged orig, CharacterBody self)
         {
             SkillLocator skillLocator = self.skillLocator;
 
-            if ((bool)skillLocator && ConfigPrimaryReplacement.Value)
+            if ((bool)skillLocator && (bool)self.master && (bool)self.inventory)
             {
-                //prioritize visions of heresy
-                if ((bool)self.inventory && self.inventory.GetItemCount(RoR2Content.Items.LunarPrimaryReplacement) == 0)
-                    self.ReplaceSkillIfItemPresent(skillLocator.primary, DLC1Content.Items.LunarSun.itemIndex, EgoPrimaryAbility.EgoPrimarySkill);
-            }
+                RoR2.Skills.SkillDef primarySkillRep = utils.lookupSkill(ConfigPrimarySkill.Value);
+                if (ConfigPrimaryReplacement.Value && (bool)primarySkillRep)
+                {
+                    if (ConfigCorruptVisions.Value)
+                    {
+                        utils.CorruptItem(self.inventory, RoR2Content.Items.LunarPrimaryReplacement.itemIndex, self.master);
+                        self.ReplaceSkillIfItemPresent(skillLocator.primary, DLC1Content.Items.LunarSun.itemIndex, primarySkillRep);
+                    }
+                    else if (self.inventory.GetItemCount(RoR2Content.Items.LunarPrimaryReplacement) == 0)
+                    {
+                        self.ReplaceSkillIfItemPresent(skillLocator.primary, DLC1Content.Items.LunarSun.itemIndex, primarySkillRep);
+                    }
+                }
 
+                RoR2.Skills.SkillDef secondarySkillRep = utils.lookupSkill(ConfigSecondarySkill.Value);
+                if (ConfigSecondaryReplacement.Value && (bool)secondarySkillRep)
+                {
+                    if (ConfigCorruptHooks.Value)
+                    {
+                        utils.CorruptItem(self.inventory, RoR2Content.Items.LunarSecondaryReplacement.itemIndex, self.master);
+                        self.ReplaceSkillIfItemPresent(skillLocator.secondary, DLC1Content.Items.LunarSun.itemIndex, secondarySkillRep);
+                    }
+                    else if (self.inventory.GetItemCount(RoR2Content.Items.LunarSecondaryReplacement) == 0)
+                    {
+                        self.ReplaceSkillIfItemPresent(skillLocator.secondary, DLC1Content.Items.LunarSun.itemIndex, secondarySkillRep);
+                    }
+                }
+
+                RoR2.Skills.SkillDef utilitySkillRep = utils.lookupSkill(ConfigUtilitySkill.Value);
+                if (ConfigUtilityReplacement.Value && (bool)utilitySkillRep)
+                {
+                    if (ConfigCorruptStrides.Value)
+                    {
+                        utils.CorruptItem(self.inventory, RoR2Content.Items.LunarUtilityReplacement.itemIndex, self.master);
+                        self.ReplaceSkillIfItemPresent(skillLocator.utility, DLC1Content.Items.LunarSun.itemIndex, utilitySkillRep);
+                    }
+                    else if (self.inventory.GetItemCount(RoR2Content.Items.LunarUtilityReplacement) == 0)
+                    {
+                        self.ReplaceSkillIfItemPresent(skillLocator.utility, DLC1Content.Items.LunarSun.itemIndex, utilitySkillRep);
+                    }
+                }
+
+                RoR2.Skills.SkillDef specialSkillRep = utils.lookupSkill(ConfigSpecialSkill.Value);
+                if (ConfigSpecialReplacement.Value && (bool)specialSkillRep)
+                {
+                    if (ConfigCorruptEssence.Value)
+                    {
+                        utils.CorruptItem(self.inventory, RoR2Content.Items.LunarSpecialReplacement.itemIndex, self.master);
+                        self.ReplaceSkillIfItemPresent(skillLocator.special, DLC1Content.Items.LunarSun.itemIndex, specialSkillRep);
+                    }
+                    else if (self.inventory.GetItemCount(RoR2Content.Items.LunarSpecialReplacement) == 0)
+                    {
+                        self.ReplaceSkillIfItemPresent(skillLocator.special, DLC1Content.Items.LunarSun.itemIndex, specialSkillRep);
+                    }
+                }
+            }
             orig(self);
         }
 
         private void LoadAssets() {
             megalomaniaAssetBundle = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Info.Location), "AssetBundles", "megalomaniaassets"));
 
-            EgoPrimarySprite = megalomaniaAssetBundle.LoadAsset<Sprite>("ego_primary_replacement_icon_5");
+            EgoPrimarySprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texConceitIcon");
+            EgoMonopolizeSprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texMonopolizeIcon");
+            EgoBombSprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texBombIcon");
+            EgoTwinShotSprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texTwinShotIcon");
+            EgoShellSprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texShellIcon");
         }
 
         private void ItemCatalog_SetItemDefs(On.RoR2.ItemCatalog.orig_SetItemDefs orig, ItemDef[] newItemDefs)
@@ -174,8 +265,6 @@ namespace MegalomaniaPlugin
             utils.ParseItemPriorityList();
             utils.ParseItemConvertToList();
         }
-
-
 
         private void InitItems()
         {
@@ -201,18 +290,30 @@ namespace MegalomaniaPlugin
             ItemAPI.Add(new CustomItem(transformToken, displayRules));
         }
 
+        private void InitBuffs()
+        {
+            EgoShelledBuff.initEgoShellBuff();
+        }
+
         private void InitSkills()
         {
-            EgoPrimaryAbility.initEgoPrimary(EgoPrimarySprite);
+            ConceitAbility.initEgoPrimary(EgoPrimarySprite);
+            MonopolizeAbility.initEgoMonopolize(EgoMonopolizeSprite, utils);
+            BombAbility.initBombAbility(EgoBombSprite);
+            TwinShotAbility.initEgoTwinShot(EgoTwinShotSprite);
+            ShellAbility.initEgoShell(EgoShellSprite);
         }
 
         private void CreateConfig()
         {
             ConfigCompatibilityMode = Config.Bind("0. Main", "Compatibility Mode", false,
-               "If true, skips the hook to override Egocentrism's behavior:\n" +
+               "If true, skips the hook to override Egocentrism in a couple of ways:\n" +
                "Disables all bomb stat and transformation over time changes.\n" +
-               "Other features, including stats (eg. max health), will still work.\n" +
-               "Transformation on stage start will still work.");
+               "Disables description override.\n" +
+               "Other features that still work:\n" +
+               "Stacking owner stats, such as health and movement speed.\n" +
+               "Transformation on stage start.\n" +
+               "Skill replacements.");
 
             #region Stats
             // STATS
@@ -259,11 +360,9 @@ namespace MegalomaniaPlugin
                 "Should bombs be generated over time at all?");
             ConfigBombStacking = Config.Bind("4. Bombs - Toggles", "Bomb Stacking", false,
                "If true, the amount of bombs currently orbiting the player is used instead of the amount of Egocentrism, for stacking calculations of player stats.");
-            ConfigPrimaryReplacement = Config.Bind("4. Bombs - Toggles", "Egocentrism Primary REPLACEMENT", false,
-                "If true, holding Egocentrism replaces the primary skill with Conceit unless you have Visions of Heresy.");
-            ConfigPrimaryEnhancement = Config.Bind("4. Bombs - Toggles", "Egocentrism Primary Enhancement", false,
+            ConfigPrimaryEnhancement = Config.Bind("4. Bombs - Toggles", "Egocentrism Primary Targetting", false,
                 "If true, Egocentrism enhances your primary skill by firing Egocentrism bombs at enemies within 30 degrees of view.\n" +
-                "Comparable to Shuriken.");
+                "Comparable in activation to Shuriken.");
             ConfigPassiveBombAttack = Config.Bind("4. Bombs - Toggles", "Passive Bomb Attack", true,
                 "Whether the vanilla seeking behavior should apply. If a bomb collides with an enemy, it might still explode.");
             /*ConfigOnHitBombAttack = Config.Bind("4. Bombs - Toggles", "On Hit: Bombs Attack", false,
@@ -298,7 +397,7 @@ namespace MegalomaniaPlugin
             ConfigStageStartTransform = Config.Bind("5. Transform - When to Transform", "Stage Start Transformations", 5,
                 "How many items to convert on stage start, similar to Benthic Bloom.\n" +
                 "If this is set to 0 or a negative number, conversion on stage start is disabled.");
-
+            
             ConfigStageStartTransformStack = Config.Bind("5. Transform - When to Transform", "Stage Start Transformations Per Stack", 0.0,
                 "How many items to convert on stage start per additional stack.\n" +
                 "Rounded down after calculating.");
@@ -332,6 +431,22 @@ namespace MegalomaniaPlugin
                 "The system is intelligent and won't count stacks added by conversion from the current stage.");
 
             //Rules
+            ConfigStackSizeMatters = Config.Bind("6. Transform - Rules", "Stack Size Matters", false,
+                "If true, the weight of the item is multiplied by how many of that item you have.\n" +
+                "Weight Calculation: TierWeight + ItemWeight + Floor(SSMultiplier * ItemWeight * (StackSize - 1) + SSAdder * (StackSize - 1))");
+
+            ConfigStackSizeMultiplier = Config.Bind("6. Transform - Rules", "Stack Size Multiplier", 0.2,
+                "How much to multiply subsequent stacks' weight by when Stack Size Matters is enabled.\n" +
+                "Weight is rounded down after calculating.\n" +
+                "Eg: A weighted item at 10 and a multiplier of 0.5 would stack 10 -> 15 -> 20 -> 25\n" +
+                "Eg: A weighted item at 50 and a multiplier of 0.2 would stack 50 -> 60 -> 70 -> 80");
+
+            ConfigStackSizeAdder = Config.Bind("6. Transform - Rules", "Stack Size Adder", 3.0,
+                "How much to add to weight per subsequent stack when Stack Size Matters is enabled.\n" +
+                "Weight is rounded down after calculating.\n" +
+                "Eg: A weighted item at 10 and an adder of 5 would stack 10 -> 15 -> 20 -> 25\n" +
+                "Eg: A weighted item at 50 and an adder of 0.5 would stack 50 -> 50 (50.5) -> 51 -> 51 (51.5)");
+
             ConfigConversionSelectionType = Config.Bind("6. Transform - Rules", "Conversion Selection Type", "Weighted",
                 "Determines method for choosing items. Case insensitive. Allowed values:\n" +
                 "Weighted: tends towards higher weighted items and tiers but maintains randomness.\n" +
@@ -346,7 +461,7 @@ namespace MegalomaniaPlugin
                 "Format: item1:integer, item2:int, item3:i, etc\n" +
                 "Case sensitive, somewhat whitespace sensitive.\n" +
                 "The diplay name might not always equal the codename of the item.\n" +
-                "For example: Egocentrism = LunarSun. To find the name out for yourself, download the DebugToolkit mod, open the console (ctrl + alt + backtick (`)) and type in \"list_item\"");
+                "Eg: Egocentrism = LunarSun. To find the name out for yourself, download the DebugToolkit mod, open the console (ctrl + alt + backtick (`)) and type in \"list_item\"");
 
             ConfigRarityPriorityList = Config.Bind("6. Transform - Rules", "Rarity:Priority List",
                 "voidyellow:100, voidred:70, voidgreen:60, red:50, yellow:40, voidwhite:35, green:30, white:15, blue:0",
@@ -371,6 +486,52 @@ namespace MegalomaniaPlugin
                 "Case sensitive, somewhat whitespace sensitive.\n" +
                 "The diplay name might not always equal the codename of the item.\n" +
                 "For example: Wax Quail = JumpBoost. To find the name out for yourself, download the DebugToolkit mod, open the console (ctrl + alt + backtick (`)) and type in \"list_item\"");
+            #endregion
+
+            #region Skills
+            ConfigSkillsInfo = Config.Bind("7.0 Skills - All", "Skill Info", ":)",
+            "Ignored. This is for information on what skills do.\n" +
+            "Conceit: Fire a burst of 3 lunar shards for 3x60% damage. Intended to be primary.\n" +
+            "Chimera Bomb: Fire a tracking bomb for 450% damage. Intended to be secondary.\n" +
+            "Twin Shot: Fire 6 lunar helices for 6x180% damage. Intended to be alt secondary.\n" +
+            "Chimera Shell: Immediately gain barrier equal to 25% of combined max health, and jumpstart shield recharge. Damage taken to health or shield is capped to 10% of combined max health, but speed and healing are halved for 7 seconds. Intended to be utility.\n" +
+            "Monopolize: Crush up to 5 items. Gain twice the items lost as Egocentrism. Always grants at least 1 Egocentrism. Cooldown 60s. Intended to be special.\n");
+            
+            ConfigPrimarySkill = Config.Bind("7.1 Skills - Primary", "Skill to Use", "conceit",
+                "What skill to replace primary with.\n" +
+                "Allowed values: conceit, monopolize, bomb, twinshot, shell");
+            ConfigPrimaryReplacement = Config.Bind("7.1 Skills - Primary", "Enable Primary Replacement", true,
+                "If true, holding Egocentrism replaces the primary skill.");
+            ConfigCorruptVisions = Config.Bind("7.1 Skills - Primary", "Corrupt Visions of Heresy", true,
+                "If true, Visions of Heresy is corrupted into Egocentrism when replacement is enabled.\n" +
+                "If false, Visions of Heresy's \"Hungering Gaze\" skill overrides Ego skill replacement.");
+
+            ConfigSecondarySkill = Config.Bind("7.2 Skills - Secondary", "Skill to Use", "bomb",
+                "What skill to replace secondary with.\n" +
+                "Allowed values: conceit, monopolize, bomb, twinshot, shell");
+            ConfigSecondaryReplacement = Config.Bind("7.2 Skills - Secondary", "Enable Secondary Replacement", false,
+                "If true, holding Egocentrism replaces the secondary skill.");
+            ConfigCorruptHooks = Config.Bind("7.2 Skills - Secondary", "Corrupt Hooks of Heresy", true,
+                "If true, Hooks of Heresy is corrupted into Egocentrism when replacement is enabled.\n" +
+                "If false, Hooks of Heresy's \"Slicing Maelstrom\" skill overrides Ego skill replacement.");
+
+            ConfigUtilitySkill = Config.Bind("7.3 Skills - Utility", "Skill to Use", "shell",
+                "What skill to replace utility with.\n" +
+                "Allowed values: conceit, monopolize, bomb, twinshot, shell");
+            ConfigUtilityReplacement = Config.Bind("7.3 Skills - Utility", "Enable Utility Replacement", false,
+                "If true, holding Egocentrism replaces the utility skill.");
+            ConfigCorruptStrides = Config.Bind("7.3 Skills - Utility", "Corrupt Strides of Heresy", true,
+                "If true, Strides of Heresy is corrupted into Egocentrism when replacement is enabled.\n" +
+                "If false, Strides of Heresy's \"Shadowfade\" skill overrides Ego skill replacement.");
+
+            ConfigSpecialSkill = Config.Bind("7.4 Skills - Special", "Skill to Use", "monopolize",
+                "What skill to replace special with.\n" +
+                "Allowed values: conceit, monopolize, bomb, twinshot, shell");
+            ConfigSpecialReplacement = Config.Bind("7.4 Skills - Special", "Enable Special Replacement", false,
+                "If true, holding Egocentrism replaces the special skill.");
+            ConfigCorruptEssence = Config.Bind("7.4 Skills - Special", "Corrupt Essence of Heresy", true,
+                "If true, Essence of Heresy is corrupted into Egocentrism when replacement is enabled.\n" +
+                "If false, Essence of Heresy's \"Ruin\" skill overrides Ego skill replacement.");
             #endregion
 
             ConfigCleanup();

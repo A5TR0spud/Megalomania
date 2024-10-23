@@ -7,8 +7,9 @@ using UnityEngine;
 using R2API.Utils;
 using System.Linq;
 using System.Numerics;
+using MegalomaniaPlugin.Utilities;
 
-namespace MegalomaniaPlugin
+namespace MegalomaniaPlugin.Items
 {
     public class MegalomaniaEgoBehavior
     {
@@ -132,7 +133,7 @@ namespace MegalomaniaPlugin
 
         private void handleBombs(CharacterBody body, ref float projectileTimer, int stack, GameObject projectilePrefab)
         {
-            float denominator = (float)(stack - 1) * (float)MegalomaniaPlugin.ConfigBombCreationStackingMultiplier.Value + 1;
+            float denominator = (stack - 1) * (float)MegalomaniaPlugin.ConfigBombCreationStackingMultiplier.Value + 1;
             if (!body.master.IsDeployableLimited(DeployableSlot.LunarSunBomb) &&
                 projectileTimer > MegalomaniaPlugin.ConfigBombCreationRate.Value / denominator + MegalomaniaPlugin.ConfigBombCreationStackingAdder.Value * stack)
             {
@@ -142,14 +143,14 @@ namespace MegalomaniaPlugin
                 if (targetFinder)
                 {
                     if (MegalomaniaPlugin.ConfigPassiveBombAttack.Value)
-                        targetFinder.lookRange = (float)(MegalomaniaPlugin.ConfigBombRange.Value + (MegalomaniaPlugin.ConfigBombStackingRange.Value * (stack - 1)));
+                        targetFinder.lookRange = (float)(MegalomaniaPlugin.ConfigBombRange.Value + MegalomaniaPlugin.ConfigBombStackingRange.Value * (stack - 1));
                     else
                         targetFinder.lookRange = 0;
                 }
                 else
                     Log.Error("LunarSunBehavior: Unable to modify projectile Range (ProjectileSphereTargetFinder component not found)");
 
-                FireProjectileInfo fireProjectileInfo = default(FireProjectileInfo);
+                FireProjectileInfo fireProjectileInfo = default;
                 fireProjectileInfo.projectilePrefab = projectilePrefab;
                 fireProjectileInfo.crit = body.RollCrit();
                 fireProjectileInfo.damage = body.damage * (float)(MegalomaniaPlugin.ConfigBombDamage.Value + MegalomaniaPlugin.ConfigBombStackingDamage.Value * stack);
