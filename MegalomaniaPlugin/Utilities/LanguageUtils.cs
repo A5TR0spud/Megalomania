@@ -251,11 +251,12 @@ namespace MegalomaniaPlugin.Utilities
 
             //"ITEM_LUNARSUN_PICKUP": "Gain multiple orbiting bombs. <color=#FF7F7F>Every minute, assimilate another item into Egocentrism.</color>",
             //"ITEM_LUNARSUN_DESC": "Every <style=cIsUtility>3</style><style=cStack>(-50% per stack)</style> seconds, gain an <style=cIsDamage>orbiting bomb</style> that detonates on impact for <style=cIsDamage>360%</style> damage, up to a maximum of <style=cIsUtility>3<style=cStack>(+1 per stack)</style> bombs</style>. Every <style=cIsUtility>60</style> seconds, a random item is <style=cIsUtility>converted</style> into this item.",
-            LanguageAPI.AddOverlay("ITEM_LUNARSUN_DESC",
+            LanguageAPI.Add("ITEM_LUNARSUN_DESC",
                 bombGenString + transformTimeString + transformStageString + statsString + skillsReplacementString,
             "en");
         }
 
+        //this function exists because i couldnt get languageapi to work
         private static string skillReplacementLookupEN(string lookupID)
         {
             string s = lookupID;

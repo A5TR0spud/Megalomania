@@ -14,7 +14,7 @@
     "MEGALOMANIA_TWINSHOT_DESCRIPTION": "Fire 6 lunar helices for <style=cIsDamage>6x360% damage</style>.",
 
     "MEGALOMANIA_SHELL_NAME": "Chimera Shell",
-    "MEGALOMANIA_SHELL_DESCRIPTION": "Immediately gain <style=cIsHealing>barrier equal to 25% of combined max health</style>, up to 50% of combined max health. and <style=cIsUtility>jumpstart shield recharge</style>. Damage taken is <style=cIsUtility>capped to 10% of max health</style>, <color=#FF7F7F>speed is halved, and healing is disabled</color> for 7 seconds.",
+    "MEGALOMANIA_SHELL_DESCRIPTION": "Immediately gain <style=cIsHealing>barrier equal to 25% of combined max health</style>, and <style=cIsUtility>jumpstart shield recharge</style>. Damage taken to shield or health is <style=cIsUtility>capped to 10% of combined max health</style>, <color=#FF7F7F>but speed and healing are halved</color> for 7 seconds.",
 
     "MEGALOMANIA_MONOPOLIZE_NAME": "Monopolize",
     "MEGALOMANIA_MONOPOLIZE_DESC": "Crush up to <style=cIsUtility>5 items</style> to gain <style=cIsUtility>twice the Egocentrism</style>. Always grants <style=cIsUtility>at least one</style>."

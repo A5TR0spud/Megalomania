@@ -491,10 +491,10 @@ namespace MegalomaniaPlugin
             #region Skills
             ConfigSkillsInfo = Config.Bind("7.0 Skills - All", "Skill Info", ":)",
             "Ignored. This is for information on what skills do.\n" +
-            "Conceit: Fire a burst of 3 lunar shards for 3x6y0% damage. Intended to be primary.\n" +
-            "Chimera Bomb: Fire a tracking bomb for 480% damage. Intended to be secondary.\n" +
-            "Twin Shot: Fire 6 lunar helices for 6x360% damage. Intended to be alt secondary.\n" +
-            "Chimera Shell: Immediately gain barrier equal to 25% of combined max health, up to 50% of combined max health, and jumpstart shield recharge. Damage taken is capped to 10% of max health, speed is halved, and healing is disabled for 7 seconds. Intended to be utility.\n" +
+            "Conceit: Fire a burst of 3 lunar shards for 3x60% damage. Intended to be primary.\n" +
+            "Chimera Bomb: Fire a tracking bomb for 450% damage. Intended to be secondary.\n" +
+            "Twin Shot: Fire 6 lunar helices for 6x180% damage. Intended to be alt secondary.\n" +
+            "Chimera Shell: Immediately gain barrier equal to 25% of combined max health, and jumpstart shield recharge. Damage taken to health or shield is capped to 10% of combined max health, but speed and healing are halved for 7 seconds. Intended to be utility.\n" +
             "Monopolize: Crush up to 5 items. Gain twice the items lost as Egocentrism. Always grants at least 1 Egocentrism. Cooldown 60s. Intended to be special.\n");
             
             ConfigPrimarySkill = Config.Bind("7.1 Skills - Primary", "Skill to Use", "conceit",

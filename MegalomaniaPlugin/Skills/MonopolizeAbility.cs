@@ -41,7 +41,7 @@ namespace MegalomaniaPlugin.Skills
             MonopolizeSkill.beginSkillCooldownOnSkillEnd = true;
             MonopolizeSkill.canceledFromSprinting = false;
             MonopolizeSkill.cancelSprintingOnActivation = true;
-            MonopolizeSkill.fullRestockOnAssign = true;
+            MonopolizeSkill.fullRestockOnAssign = false;
             MonopolizeSkill.interruptPriority = InterruptPriority.Any;
             MonopolizeSkill.isCombatSkill = false;
             MonopolizeSkill.mustKeyPress = true;

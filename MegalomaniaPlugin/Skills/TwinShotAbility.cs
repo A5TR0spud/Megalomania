@@ -27,8 +27,8 @@ namespace MegalomaniaPlugin.Skills
         private int shotsFiredInBurst = 0;
         private float duration;
         public static SkillDef TwinShotSkill;
-        static float damageCoefficient = 3.6f;
-        static float force = 0.1f;
+        static float damageCoefficient = 1.8f;
+        static float force = 0.2f;
         public static GameObject projectilePrefab;
         public static GameObject muzzleFlashPrefab;
 
@@ -44,7 +44,7 @@ namespace MegalomaniaPlugin.Skills
             TwinShotSkill.activationStateMachineName = "Weapon";
             TwinShotSkill.canceledFromSprinting = false;
             TwinShotSkill.cancelSprintingOnActivation = true;
-            TwinShotSkill.fullRestockOnAssign = true;
+            TwinShotSkill.fullRestockOnAssign = false;
             TwinShotSkill.interruptPriority = InterruptPriority.Any;
             TwinShotSkill.isCombatSkill = true;
             TwinShotSkill.mustKeyPress = false;

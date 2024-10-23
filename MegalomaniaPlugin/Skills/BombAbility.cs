@@ -22,8 +22,8 @@ namespace MegalomaniaPlugin.Skills
         public static readonly float baseDuration = 0.5f;
         private float duration;
         public static SkillDef BombSkill;
-        static readonly float damageCoefficient = 4.8f;
-        static readonly float force = 1f;
+        static readonly float damageCoefficient = 4.5f;
+        static readonly float force = 0.8f;
         public static GameObject projectilePrefab;
         public static GameObject muzzleFlashPrefab;
 
@@ -39,7 +39,7 @@ namespace MegalomaniaPlugin.Skills
             BombSkill.activationStateMachineName = "Weapon";
             BombSkill.canceledFromSprinting = false;
             BombSkill.cancelSprintingOnActivation = true;
-            BombSkill.fullRestockOnAssign = true;
+            BombSkill.fullRestockOnAssign = false;
             BombSkill.interruptPriority = InterruptPriority.Any;
             BombSkill.isCombatSkill = true;
             BombSkill.mustKeyPress = false;
@@ -127,8 +127,7 @@ namespace MegalomaniaPlugin.Skills
                 projectilePrefab,
                 aimRay.origin
                 + aimRay.direction * 1.8f
-                + aimRay.direction * base.characterBody.moveSpeed * dot * 0.1423f
-                + base.characterBody.characterMotor.velocity * dot * 0.1423f,
+                + aimRay.direction * base.characterBody.moveSpeed * dot * 0.1423f,
                 Util.QuaternionSafeLookRotation(aimRay.direction), gameObject, damageStat * damageCoefficient, force, RollCrit());
         }
 

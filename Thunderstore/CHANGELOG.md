@@ -7,17 +7,9 @@
 - Now defaults to replacing primary with Conceit, and immediately corrupting Visions of Heresy to prevent conflict or confusion.
 - Rename Primary Enhancement -> Primary Targetting
 - New skills: Monopolize, Chimera Bomb, Twin Shot, Chimera Shell
-- Replaced Conceit icon
-- Conceit now fires in a burst of 3 at a base rate of 8/s
-- Conceit has a base burst per second rate of 1/s
-- Nerf Conceit damage *(360% -> 60%)*
-- Conceit now has some spread *(0 -> 1)*
-- Conceit now has firing sound effects
-- Conceit projectiles are faster *(80? -> 150)*
+- Polish Conceit skill
 
 *See config for descriptions of new skills.*
-
-*After testing Conceit with exploder muzzle flash, I've elected it too obstructive to include in Conceit. It's instead used in Monopolize.*
 
 ## 1.0.1
 
