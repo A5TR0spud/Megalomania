@@ -189,6 +189,14 @@ namespace MegalomaniaPlugin.Utilities
                 inventory.RemoveItem(toTransform);
                 inventory.GiveItem(toGive);
 
+                if (MegalomaniaPlugin.ConfigRegenerateScrap.Value)
+                {
+                    if (toTransform == DLC1Content.Items.RegeneratingScrap.itemIndex)
+                    {
+                        inventory.GiveItem(DLC1Content.Items.RegeneratingScrapConsumed);
+                    }
+                }
+
                 //balance transformation over time
                 if (!ignoreCap)
                     inventory.GiveItem(MegalomaniaPlugin.transformToken, 1 + MegalomaniaPlugin.ConfigMaxTransformationsPerStageStacking.Value);
