@@ -26,6 +26,7 @@ namespace MegalomaniaPlugin.Skills
         static readonly float force = 0.8f;
         public static GameObject projectilePrefab;
         public static GameObject muzzleFlashPrefab;
+        public static float spreadBloomValue = 1f;
 
         public static void initBombAbility(Sprite Icon)
         {
@@ -40,7 +41,6 @@ namespace MegalomaniaPlugin.Skills
             BombSkill.canceledFromSprinting = false;
             BombSkill.cancelSprintingOnActivation = true;
             BombSkill.fullRestockOnAssign = false;
-            BombSkill.interruptPriority = InterruptPriority.Any;
             BombSkill.isCombatSkill = true;
             BombSkill.mustKeyPress = false;
             BombSkill.baseMaxStock = 1;
@@ -113,8 +113,12 @@ namespace MegalomaniaPlugin.Skills
                 EffectManager.SpawnEffect(muzzleFlashPrefab, effectData, false);
                 //SimpleMuzzleFlash(muzzleFlashPrefab, base.gameObject, "MuzzleLaser", transmit: false);
             }
+            if ((bool)base.characterBody)
+            {
+                base.characterBody.AddSpreadBloom(spreadBloomValue);
+            }
             //TrajectoryAimAssist.ApplyTrajectoryAimAssist(ref aimRay, projectilePrefab, base.gameObject, 50);
-            Util.PlaySound("Play_lunar_exploder_m1_fire", gameObject);//, attackSpeedStat);
+            Util.PlaySound("Play_lunar_wisp_attack2_launch", gameObject);//, attackSpeedStat);
             Vector3 aim = aimRay.direction.normalized;
             Vector3 vel = base.characterMotor.velocity.normalized;
             float dot = aim.x * vel.x + aim.y * vel.y + aim.z + vel.z;

@@ -31,11 +31,12 @@ namespace MegalomaniaPlugin.Skills
         static float force = 0.2f;
         public static GameObject projectilePrefab;
         public static GameObject muzzleFlashPrefab;
+        public static float spreadBloomValue = 0.3f;
 
         public static void initEgoTwinShot(Sprite Icon)
         {
             projectilePrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/Projectiles/LunarGolemTwinShotProjectile");
-            muzzleFlashPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/MuzzleFlashes/MuzzleflashLunarShard");
+            muzzleFlashPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/MuzzleFlashes/MuzzleflashLunarGolemTwinShot");
 
 
             TwinShotSkill = ScriptableObject.CreateInstance<EgoSkillDef>();
@@ -45,7 +46,6 @@ namespace MegalomaniaPlugin.Skills
             TwinShotSkill.canceledFromSprinting = false;
             TwinShotSkill.cancelSprintingOnActivation = true;
             TwinShotSkill.fullRestockOnAssign = false;
-            TwinShotSkill.interruptPriority = InterruptPriority.Any;
             TwinShotSkill.isCombatSkill = true;
             TwinShotSkill.mustKeyPress = false;
             TwinShotSkill.baseMaxStock = 1;
@@ -114,6 +114,10 @@ namespace MegalomaniaPlugin.Skills
                 //effectData.SetChildLocatorTransformReference(base.gameObject, childIndex);
                 EffectManager.SpawnEffect(muzzleFlashPrefab, effectData, false);
                 //SimpleMuzzleFlash(muzzleFlashPrefab, base.gameObject, "MuzzleLaser", transmit: false);
+            }
+            if ((bool)base.characterBody)
+            {
+                base.characterBody.AddSpreadBloom(spreadBloomValue);
             }
             //TrajectoryAimAssist.ApplyTrajectoryAimAssist(ref aimRay, projectilePrefab, base.gameObject, 50);
             Vector3 forward = Util.ApplySpread(aimRay.direction, 0f, 1f, 15f, 2f);

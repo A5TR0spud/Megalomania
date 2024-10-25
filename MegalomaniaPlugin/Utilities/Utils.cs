@@ -1,5 +1,6 @@
 ﻿using BepInEx;
 using MegalomaniaPlugin.Skills;
+using MegalomaniaPlugin.Skills.MinigunAbility;
 using RoR2;
 using RoR2.Orbs;
 using RoR2.Skills;
@@ -78,6 +79,7 @@ namespace MegalomaniaPlugin.Utilities
             SkillLookup.Add("bomb", BombAbility.BombSkill);
             SkillLookup.Add("twinshot", TwinShotAbility.TwinShotSkill);
             SkillLookup.Add("shell", ShellAbility.ShellSkill);
+            SkillLookup.Add("minigun", FireMinigun.MinigunSkill);
         }
 
 #nullable enable

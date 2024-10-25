@@ -4,6 +4,7 @@ using IL.RoR2.Skills;
 using MegalomaniaPlugin.Buffs;
 using MegalomaniaPlugin.Items;
 using MegalomaniaPlugin.Skills;
+using MegalomaniaPlugin.Skills.MinigunAbility;
 using MegalomaniaPlugin.Utilities;
 using R2API;
 using R2API.Utils;
@@ -46,7 +47,8 @@ namespace MegalomaniaPlugin
         public static Sprite EgoBombSprite;
         public static Sprite EgoTwinShotSprite;
         public static Sprite EgoShellSprite;
-        
+        public static Sprite EgoMinigunSprite;
+
         #region Constants and Configs
 
         public static ConfigEntry<bool> ConfigCompatibilityMode { get; set; }
@@ -270,6 +272,7 @@ namespace MegalomaniaPlugin
             EgoBombSprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texBombIcon");
             EgoTwinShotSprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texTwinShotIcon");
             EgoShellSprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texShellIcon");
+            EgoMinigunSprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texLunarMinigun");
         }
 
         private void ItemCatalog_SetItemDefs(On.RoR2.ItemCatalog.orig_SetItemDefs orig, ItemDef[] newItemDefs)
@@ -315,6 +318,7 @@ namespace MegalomaniaPlugin
             BombAbility.initBombAbility(EgoBombSprite);
             TwinShotAbility.initEgoTwinShot(EgoTwinShotSprite);
             ShellAbility.initEgoShell(EgoShellSprite);
+            FireMinigun.initMinigunAbility(EgoMinigunSprite);
         }
 
         private void CreateConfig()
@@ -528,15 +532,18 @@ namespace MegalomaniaPlugin
             #region Skills
             ConfigSkillsInfo = Config.Bind("7.0 Skills - All", "Skill Info", ":)",
             "Ignored. This is for information on what skills do.\n" +
-            "Conceit: Fire a burst of 3 lunar shards for 3x60% damage. Intended to be primary.\n" +
+            "Conceit: Fire a burst of 3 lunar shards for 3x100% damage. Intended to be primary.\n" +
+            "Lunar Minigun: Rapidly fire lunar needles for 80% damage. Finishes with a blast of 10 needles. Intended to be alt primary.\n" +
             "Chimera Bomb: Fire a tracking bomb for 450% damage. Intended to be secondary.\n" +
             "Twin Shot: Fire 6 lunar helices for 6x180% damage. Intended to be alt secondary.\n" +
             "Chimera Shell: Immediately gain barrier equal to 25% of combined max health, and jumpstart shield recharge. Damage taken to health or shield is capped to 10% of combined max health, but speed and healing are halved for 7 seconds. Intended to be utility.\n" +
             "Monopolize: Crush up to 5 items. Gain twice the items lost as Egocentrism. Always grants at least 1 Egocentrism. Cooldown 60s. Intended to be special.\n");
-            
+
+            string allowedSkillValues = "conceit, minigun, bomb, twinshot, shell, monopolize";
+
             ConfigPrimarySkill = Config.Bind("7.1 Skills - Primary", "Skill to Use", "conceit",
                 "What skill to replace primary with.\n" +
-                "Allowed values: conceit, monopolize, bomb, twinshot, shell");
+                $"Allowed values: {allowedSkillValues}");
             ConfigPrimaryReplacement = Config.Bind("7.1 Skills - Primary", "Enable Primary Replacement", true,
                 "If true, holding Egocentrism replaces the primary skill.");
             ConfigCorruptVisions = Config.Bind("7.1 Skills - Primary", "Corrupt Visions of Heresy", true,
@@ -545,7 +552,7 @@ namespace MegalomaniaPlugin
 
             ConfigSecondarySkill = Config.Bind("7.2 Skills - Secondary", "Skill to Use", "bomb",
                 "What skill to replace secondary with.\n" +
-                "Allowed values: conceit, monopolize, bomb, twinshot, shell");
+                $"Allowed values: {allowedSkillValues}");
             ConfigSecondaryReplacement = Config.Bind("7.2 Skills - Secondary", "Enable Secondary Replacement", false,
                 "If true, holding Egocentrism replaces the secondary skill.");
             ConfigCorruptHooks = Config.Bind("7.2 Skills - Secondary", "Corrupt Hooks of Heresy", true,
@@ -554,7 +561,7 @@ namespace MegalomaniaPlugin
 
             ConfigUtilitySkill = Config.Bind("7.3 Skills - Utility", "Skill to Use", "shell",
                 "What skill to replace utility with.\n" +
-                "Allowed values: conceit, monopolize, bomb, twinshot, shell");
+                $"Allowed values: {allowedSkillValues}");
             ConfigUtilityReplacement = Config.Bind("7.3 Skills - Utility", "Enable Utility Replacement", false,
                 "If true, holding Egocentrism replaces the utility skill.");
             ConfigCorruptStrides = Config.Bind("7.3 Skills - Utility", "Corrupt Strides of Heresy", true,
@@ -563,7 +570,7 @@ namespace MegalomaniaPlugin
 
             ConfigSpecialSkill = Config.Bind("7.4 Skills - Special", "Skill to Use", "monopolize",
                 "What skill to replace special with.\n" +
-                "Allowed values: conceit, monopolize, bomb, twinshot, shell");
+                $"Allowed values: {allowedSkillValues}");
             ConfigSpecialReplacement = Config.Bind("7.4 Skills - Special", "Enable Special Replacement", false,
                 "If true, holding Egocentrism replaces the special skill.");
             ConfigCorruptEssence = Config.Bind("7.4 Skills - Special", "Corrupt Essence of Heresy", true,
@@ -584,7 +591,6 @@ namespace MegalomaniaPlugin
 
         private void HookLunarSunStats()
         {
-            
             RecalculateStatsAPI.GetStatCoefficients += (sender, args) =>
             {
                 if (sender && sender.inventory)

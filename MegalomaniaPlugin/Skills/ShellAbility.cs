@@ -41,7 +41,6 @@ namespace MegalomaniaPlugin.Skills
             ShellSkill.canceledFromSprinting = false;
             ShellSkill.cancelSprintingOnActivation = false;
             ShellSkill.fullRestockOnAssign = false;
-            ShellSkill.interruptPriority = InterruptPriority.Any;
             ShellSkill.isCombatSkill = false;
             ShellSkill.mustKeyPress = false;
             ShellSkill.baseMaxStock = 1;

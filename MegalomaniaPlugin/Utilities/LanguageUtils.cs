@@ -437,6 +437,9 @@ namespace MegalomaniaPlugin.Utilities
                 case "MEGALOMANIA_SHELL_NAME":
                     s = "Chimera Shell";
                     break;
+                case "MEGALOMANIA_MINIGUN_NAME":
+                    s = "Chimera Minigun";
+                    break;
             }
 
             return s;
