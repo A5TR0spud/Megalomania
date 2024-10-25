@@ -30,12 +30,19 @@ namespace MegalomaniaPlugin.Utilities
         private static int transformStageStart;
         private static double transformStageStartStacking;
         private static bool transformOnStageStartHappens;
+        private static double initHealth;
         private static double health;
+        private static double initRegen;
         private static double regen;
+        private static double initArmor;
         private static double armor;
+        private static double initDamage;
         private static double damage;
+        private static double initCrit;
         private static double crit;
+        private static double initATK;
         private static double attackSpeed;
+        private static double initMove;
         private static double moveSpeed;
         private static bool doReplacePrimary;
         private static string primaryReplacementID;
@@ -45,6 +52,9 @@ namespace MegalomaniaPlugin.Utilities
         private static string utilityReplacementID;
         private static bool doReplaceSpecial;
         private static string specialReplacementID;
+        private static int skillReplacementCount;
+        private static bool benefitStats;
+        private static bool harmStats;
 
         public static void init(Utils utils)
         {
@@ -69,13 +79,28 @@ namespace MegalomaniaPlugin.Utilities
             transformStageStart = MegalomaniaPlugin.ConfigStageStartTransform.Value;
             transformStageStartStacking = MegalomaniaPlugin.ConfigStageStartTransformStack.Value;
             transformOnStageStartHappens = transformStageStart > 0;
+
+            initHealth = MegalomaniaPlugin.ConfigMaxHealthInitialStack.Value;
             health = MegalomaniaPlugin.ConfigMaxHealthPerStack.Value;
+
+            initRegen = MegalomaniaPlugin.ConfigRegenInitialStack.Value;
             regen = MegalomaniaPlugin.ConfigRegenPerStack.Value;
+
+            initArmor = MegalomaniaPlugin.ConfigArmorInitialStack.Value;
             armor = MegalomaniaPlugin.ConfigArmorPerStack.Value;
+
+            initDamage = MegalomaniaPlugin.ConfigDamageInitialStack.Value * 100;
             damage = MegalomaniaPlugin.ConfigDamagePerStack.Value * 100;
+
+            initCrit = MegalomaniaPlugin.ConfigCritChanceInitialStack.Value * 100;
             crit = MegalomaniaPlugin.ConfigCritChancePerStack.Value * 100;
+
+            initATK = MegalomaniaPlugin.ConfigAttackSpeedInitialStack.Value * 100;
             attackSpeed = MegalomaniaPlugin.ConfigAttackSpeedPerStack.Value * 100;
+
+            initMove = MegalomaniaPlugin.ConfigMovementSpeedInitialStack.Value * 100;
             moveSpeed = MegalomaniaPlugin.ConfigMovementSpeedPerStack.Value * 100;
+
             primaryReplacementID = utils.lookupSkill(MegalomaniaPlugin.ConfigPrimarySkill.Value.Trim().ToLower()).skillNameToken;
             doReplacePrimary = MegalomaniaPlugin.ConfigPrimaryReplacement.Value && !primaryReplacementID.IsNullOrWhiteSpace();
             secondaryReplacementID = utils.lookupSkill(MegalomaniaPlugin.ConfigSecondarySkill.Value.Trim().ToLower()).skillNameToken;
@@ -84,6 +109,28 @@ namespace MegalomaniaPlugin.Utilities
             doReplaceUtility = MegalomaniaPlugin.ConfigUtilityReplacement.Value && !utilityReplacementID.IsNullOrWhiteSpace();
             specialReplacementID = utils.lookupSkill(MegalomaniaPlugin.ConfigSpecialSkill.Value.Trim().ToLower()).skillNameToken;
             doReplaceSpecial = MegalomaniaPlugin.ConfigSpecialReplacement.Value && !specialReplacementID.IsNullOrWhiteSpace();
+
+            skillReplacementCount = 0;
+            if (doReplacePrimary) skillReplacementCount++;
+            if (doReplaceSecondary) skillReplacementCount++;
+            if (doReplaceUtility) skillReplacementCount++;
+            if (doReplaceSpecial) skillReplacementCount++;
+
+            benefitStats = health > 0.0 || initHealth > 0.0
+                || regen > 0.0 || initRegen > 0.0
+                || armor > 0.0 || initArmor > 0.0
+                || damage > 0.0 || initDamage > 0.0
+                || crit > 0.0 || initCrit > 0.0
+                || attackSpeed > 0.0 || initATK > 0.0
+                || moveSpeed > 0.0 || initMove > 0.0;
+
+            harmStats = health < 0.0 || initHealth < 0.0
+                || regen < 0.0 || initRegen < 0.0
+                || armor < 0.0 || initArmor < 0.0
+                || damage < 0.0 || initDamage < 0.0
+                || crit < 0.0 || initCrit < 0.0
+                || attackSpeed < 0.0 || initATK < 0.0
+                || moveSpeed < 0.0 || initMove < 0.0;
 
             initEN(utils);
         }
@@ -198,33 +245,68 @@ namespace MegalomaniaPlugin.Utilities
             }
 
             string statsString = "";
-            if (health != 0.0)
+            if (health != 0.0 || initHealth != 0.0)
             {
-                statsString += $"Gain <style=cIsHealing>{health}<style=cStack>(+{health} per stack)</style> max health</style>. ";
+                string stackingstr = "";
+                if (health != 0.0)
+                {
+                    stackingstr = $"<style=cStack>(+{health} per stack)</style>";
+                }
+                statsString += $"Gain <style=cIsHealing>{initHealth}{stackingstr} max health</style>. ";
             }
-            if (regen != 0.0)
+            if (regen != 0.0 || initRegen != 0.0)
             {
-                statsString += $"Gain <style=cIsHealing>{regen}<style=cStack>(+{regen} per stack)</style> health per second</style>. ";
+                string stackingstr = "";
+                if (regen != 0.0)
+                {
+                    stackingstr = $"<style=cStack>(+{regen} per stack)</style>";
+                }
+                statsString += $"Gain <style=cIsHealing>{initRegen}{stackingstr} health per second</style>. ";
             }
-            if (armor != 0.0)
+            if (armor != 0.0 || initArmor != 0.0)
             {
-                statsString += $"Gain <style=cIsUtility>{armor}<style=cStack>(+{armor} per stack)</style> armor</style>. ";
+                string stackingstr = "";
+                if (armor != 0.0)
+                {
+                    stackingstr = $"<style=cStack>(+{armor} per stack)</style>";
+                }
+                statsString += $"Gain <style=cIsUtility>{initArmor}{stackingstr} armor</style>. ";
             }
-            if (damage != 0.0)
+            if (damage != 0.0 || initDamage != 0.0)
             {
-                statsString += $"Gain <style=cIsDamage>{damage}%<style=cStack>(+{damage}% per stack)</style> damage</style>. ";
+                string stackingstr = "";
+                if (damage != 0.0)
+                {
+                    stackingstr = $"<style=cStack>(+{damage}% per stack)</style>";
+                }
+                statsString += $"Gain <style=cIsDamage>{initDamage}%{stackingstr} damage</style>. ";
             }
-            if (crit != 0.0)
+            if (crit != 0.0 || initCrit != 0.0)
             {
-                statsString += $"Gain <style=cIsDamage>{crit}%<style=cStack>(+{crit}% per stack)</style> critical strike chance.</style> ";
+                string stackingstr = "";
+                if (crit != 0.0)
+                {
+                    stackingstr = $"<style=cStack>(+{crit}% per stack)</style>";
+                }
+                statsString += $"Gain <style=cIsDamage>{initCrit}%{stackingstr} critical strike chance.</style> ";
             }
-            if (attackSpeed != 0.0)
+            if (attackSpeed != 0.0 || initATK != 0.0)
             {
-                statsString += $"Gain <style=cIsDamage>{attackSpeed}%<style=cStack>(+{attackSpeed}% per stack)</style> attack speed</style>. ";
+                string stackingstr = "";
+                if (attackSpeed != 0.0)
+                {
+                    stackingstr = $"<style=cStack>(+{attackSpeed}% per stack)</style>";
+                }
+                statsString += $"Gain <style=cIsDamage>{initATK}%{stackingstr} attack speed</style>. ";
             }
-            if (moveSpeed != 0.0)
+            if (moveSpeed != 0.0 || initMove != 0.0)
             {
-                statsString += $"Gain <style=cIsUtility>{moveSpeed}%<style=cStack>(+{moveSpeed}% per stack)</style> movement speed</style>. ";
+                string stackingstr = "";
+                if (moveSpeed != 0.0)
+                {
+                    stackingstr = $"<style=cStack>(+{moveSpeed}% per stack)</style>";
+                }
+                statsString += $"Gain <style=cIsUtility>{initMove}%{stackingstr} movement speed</style>. ";
             }
 
             string skillsReplacementString = "";
@@ -254,6 +336,84 @@ namespace MegalomaniaPlugin.Utilities
             LanguageAPI.Add("ITEM_LUNARSUN_DESC",
                 bombGenString + transformTimeString + transformStageString + statsString + skillsReplacementString,
             "en");
+
+            string pickup_bombGenString = "";
+            if (bombsAreEnabled)
+            {
+                pickup_bombGenString = "Gain multiple orbiting bombs. ";
+            }
+
+            string pickup_skillsString = "";
+
+            if (skillReplacementCount > 0)
+            {
+                if (skillReplacementCount == 1)
+                {
+                    if (doReplacePrimary)
+                    {
+                        pickup_skillsString = $"Replace your primary skill with '{skillReplacementLookupEN(primaryReplacementID)}'. ";
+                    }
+                    else if (doReplaceSecondary)
+                    {
+                        pickup_skillsString = $"Replace your secondary with '{skillReplacementLookupEN(secondaryReplacementID)}'. ";
+                    }
+                    else if (doReplaceUtility)
+                    {
+                        pickup_skillsString = $"Replace your utility with '{skillReplacementLookupEN(utilityReplacementID)}'. ";
+                    }
+                    else if (doReplaceSpecial)
+                    {
+                        pickup_skillsString = $"Replace your special with '{skillReplacementLookupEN(specialReplacementID)}'. ";
+                    }
+
+                }
+                else if (skillReplacementCount == 4)
+                {
+                    pickup_skillsString = "Replaces every skill. ";
+                }
+                else
+                {
+                    pickup_skillsString = "Replaces some skills. ";
+                }
+            }
+
+            string pickup_statsString = "";
+
+            if (benefitStats && harmStats)
+            {
+                pickup_statsString = "Increase some of your stats, <color=#FF7F7F>decrease some of your stats.</color> ";
+            }
+            else if (benefitStats)
+            {
+                pickup_statsString = "Increase some of your stats. ";
+            }
+            else if (harmStats)
+            {
+                pickup_statsString = "<color=#FF7F7F>Decrease some of your stats.</color> ";
+            }
+
+            string pickup_transformTimeString = "";
+            if (transformsHappenOverTime)
+            {
+                if (Math.Abs(transformTime - 60.0f) < 1.0f)
+                {
+                    pickup_transformTimeString = "<color=#FF7F7F>Every minute, assimilate another item into Egocentrism.</color>";
+                }
+                else
+                {
+                    pickup_transformTimeString = $"<color=#FF7F7F>Every {transformTime} seconds, assimilate another item into Egocentrism.</color>";
+                }
+            }
+
+            string pickup_transformStageString = "";
+            if (transformOnStageStartHappens)
+            {
+                pickup_transformStageString = "<color=#FF7F7F>On the start of each stage, assimilate more items into Egocentrism.</color>";
+            }
+
+            LanguageAPI.Add("ITEM_LUNARSUN_PICKUP",
+                pickup_bombGenString + pickup_skillsString + pickup_statsString + pickup_transformTimeString + pickup_transformStageString,
+            "en");
         }
 
         //this function exists because i couldnt get languageapi to work
@@ -276,6 +436,9 @@ namespace MegalomaniaPlugin.Utilities
                     break;
                 case "MEGALOMANIA_SHELL_NAME":
                     s = "Chimera Shell";
+                    break;
+                case "MEGALOMANIA_MINIGUN_NAME":
+                    s = "Chimera Minigun";
                     break;
             }
 

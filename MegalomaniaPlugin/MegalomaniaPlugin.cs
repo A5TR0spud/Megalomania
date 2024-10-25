@@ -4,6 +4,7 @@ using IL.RoR2.Skills;
 using MegalomaniaPlugin.Buffs;
 using MegalomaniaPlugin.Items;
 using MegalomaniaPlugin.Skills;
+using MegalomaniaPlugin.Skills.MinigunAbility;
 using MegalomaniaPlugin.Utilities;
 using R2API;
 using R2API.Utils;
@@ -38,7 +39,7 @@ namespace MegalomaniaPlugin
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "A5TR0spud";
         public const string PluginName = "Megalomania";
-        public const string PluginVersion = "1.1.1";
+        public const string PluginVersion = "1.2.0";
 
         public static AssetBundle megalomaniaAssetBundle;
         public static Sprite EgoPrimarySprite;
@@ -46,28 +47,41 @@ namespace MegalomaniaPlugin
         public static Sprite EgoBombSprite;
         public static Sprite EgoTwinShotSprite;
         public static Sprite EgoShellSprite;
-        
+        public static Sprite EgoMinigunSprite;
+
         #region Constants and Configs
 
         public static ConfigEntry<bool> ConfigCompatibilityMode { get; set; }
 
         #region defensive
+        public static ConfigEntry<double> ConfigMaxHealthInitialStack { get; set; }
         public static ConfigEntry<double> ConfigMaxHealthPerStack { get; set; }
+
+        public static ConfigEntry<double> ConfigRegenInitialStack { get; set; }
         public static ConfigEntry<double> ConfigRegenPerStack { get; set; }
+
+        public static ConfigEntry<double> ConfigArmorInitialStack { get; set; }
         public static ConfigEntry<double> ConfigArmorPerStack { get; set; }
         public static ConfigEntry<double> ConfigArmorMax { get; set; }
         #endregion
 
         #region offensive
+        public static ConfigEntry<double> ConfigDamageInitialStack { get; set; }
         public static ConfigEntry<double> ConfigDamagePerStack { get; set; }
+
+        public static ConfigEntry<double> ConfigCritChanceInitialStack { get; set; }
         public static ConfigEntry<double> ConfigCritChancePerStack { get; set; }
         public static ConfigEntry<bool> ConfigAttackSpeedType { get; set; }
+
+        public static ConfigEntry<double> ConfigAttackSpeedInitialStack { get; set; }
         public static ConfigEntry<double> ConfigAttackSpeedPerStack { get; set; }
         public static ConfigEntry<double> ConfigAttackSpeedBonusCap { get; set; }
         #endregion
 
         #region movement
         public static ConfigEntry<bool> ConfigMovementSpeedType { get; set; }
+
+        public static ConfigEntry<double> ConfigMovementSpeedInitialStack { get; set; }
         public static ConfigEntry<double> ConfigMovementSpeedPerStack { get; set; }
         public static ConfigEntry<double> ConfigMovementSpeedBonusCap { get; set; }
         #endregion
@@ -113,6 +127,7 @@ namespace MegalomaniaPlugin
         public static ConfigEntry<string> ConfigItemsToConvertTo { get; set; }
         public static ConfigEntry<string> ConfigRarityPriorityList { get; set; }
         public static ConfigEntry<string> ConfigItemPriorityList { get; set; }
+        public static ConfigEntry<bool> ConfigRegenerateScrap { get; set; }
         #endregion
 
         #region skills
@@ -257,6 +272,7 @@ namespace MegalomaniaPlugin
             EgoBombSprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texBombIcon");
             EgoTwinShotSprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texTwinShotIcon");
             EgoShellSprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texShellIcon");
+            EgoMinigunSprite = megalomaniaAssetBundle.LoadAsset<Sprite>("texLunarMinigun");
         }
 
         private void ItemCatalog_SetItemDefs(On.RoR2.ItemCatalog.orig_SetItemDefs orig, ItemDef[] newItemDefs)
@@ -302,6 +318,7 @@ namespace MegalomaniaPlugin
             BombAbility.initBombAbility(EgoBombSprite);
             TwinShotAbility.initEgoTwinShot(EgoTwinShotSprite);
             ShellAbility.initEgoShell(EgoShellSprite);
+            FireMinigun.initMinigunAbility(EgoMinigunSprite);
         }
 
         private void CreateConfig()
@@ -318,25 +335,42 @@ namespace MegalomaniaPlugin
             #region Stats
             // STATS
             //Defense
+            ConfigMaxHealthInitialStack = Config.Bind("1. Stats - Defensive", "Initial Max Health", 0.0,
+               "A flat amount added to max health on the initial stack.");
             ConfigMaxHealthPerStack = Config.Bind("1. Stats - Defensive", "Stacking Max Health", 5.0,
-               "A flat amount added to max health per stack.");
+               "A flat amount added to max health per subsequent stack.");
+
+            ConfigRegenInitialStack = Config.Bind("1. Stats - Defensive", "Initial Regeneration", 0.3,
+               "A flat amount added to base regeneration on the initial stack. Measured in health per second.");
             ConfigRegenPerStack = Config.Bind("1. Stats - Defensive", "Stacking Regeneration", 0.3,
-               "A flat amount added to base regeneration per stack. Measured in health per second.");
+               "A flat amount added to base regeneration per subsequent stack. Measured in health per second.");
+
+            ConfigArmorInitialStack = Config.Bind("1. Stats - Defensive", "Initial Armor", 2.0,
+               "A flat amount added to armor on the initial stack.");
             ConfigArmorPerStack = Config.Bind("1. Stats - Defensive", "Stacking Armor", 2.0,
-               "A flat amount added to armor per stack.");
+               "A flat amount added to armor per subsequent stack.");
             ConfigArmorMax = Config.Bind("1. Stats - Defensive", "Stacking Armor Cap", 200.0,
                "Used to determine maximum armor benefit from stacking.\n" +
                "Set cap to a negative value to disable the cap.");
             //Offense
+            ConfigDamageInitialStack = Config.Bind("2. Stats - Offensive", "Initial Damage", 0.0,
+                "A percentage increase to damage on the initial stack.");
             ConfigDamagePerStack = Config.Bind("2. Stats - Offensive", "Stacking Damage", 0.02,
-                "A percentage increase to damage per stack.");
+                "A percentage increase to damage per subsequent stack.");
+
+            ConfigCritChanceInitialStack = Config.Bind("2. Stats - Offensive", "Initial Crit Chance", 0.01,
+                "A percentage increase to critical hit chance on the initial stack.");
             ConfigCritChancePerStack = Config.Bind("2. Stats - Offensive", "Stacking Crit Chance", 0.01,
-                "A percentage increase to critical hit chance per stack.");
+                "A percentage increase to critical hit chance per subsequent stack.");
+
             ConfigAttackSpeedType = Config.Bind("2. Stats - Offensive", "Attack Speed Diminishing Returns", false,
                 "If true, attack speed will have dimishing returns, with the limit towards infinity approaching the bonus cap.\n" +
                 "If false, attack speed will stack linearly and cap at the bonus cap.");
+
+            ConfigAttackSpeedInitialStack = Config.Bind("2. Stats - Offensive", "Initial Attack Speed", 0.0,
+                "A percentage used to determine how much attack speed is given on the initial stack.");
             ConfigAttackSpeedPerStack = Config.Bind("2. Stats - Offensive", "Stacking Attack Speed", 0.028,
-                "A percentage used to determine how much attack speed is given per item stack.");
+                "A percentage used to determine how much attack speed is given per subsequent stack.");
             ConfigAttackSpeedBonusCap = Config.Bind("2. Stats - Offensive", "Bonus Attack Speed Cap", -1.0,
                 "A percentage used to determine the maximum attack speed boost from Egocentrism stacking.\n" +
                 "In linear mode, set cap to a negative value to disable the cap.\n" +
@@ -345,8 +379,11 @@ namespace MegalomaniaPlugin
             ConfigMovementSpeedType = Config.Bind("3. Stats - Movement Speed", "Movement Speed Diminishing Returns", true,
                 "If true, movement speed will have dimishing returns, with the limit towards infinity approaching the bonus cap.\n" +
                 "If false, movement speed will stack linearly and cap at the bonus cap.");
+
+            ConfigMovementSpeedInitialStack = Config.Bind("3. Stats - Movement Speed", "Initial Movement Speed", 0.028,
+                "A percentage used to determine how much speed is given on the initial stack.");
             ConfigMovementSpeedPerStack = Config.Bind("3. Stats - Movement Speed", "Stacking Movement Speed", 0.028,
-                "A percentage used to determine how much speed is given per item stack.");
+                "A percentage used to determine how much speed is given per subsequent stack.");
             ConfigMovementSpeedBonusCap = Config.Bind("3. Stats - Movement Speed", "Bonus Movement Speed Cap", 9.0,
                 "A percentage used to determine the maximum speed boost from Egocentrism stacking.\n" +
                 "In linear mode, set cap to a negative value to disable the cap.\n" +
@@ -486,20 +523,27 @@ namespace MegalomaniaPlugin
                 "Case sensitive, somewhat whitespace sensitive.\n" +
                 "The diplay name might not always equal the codename of the item.\n" +
                 "For example: Wax Quail = JumpBoost. To find the name out for yourself, download the DebugToolkit mod, open the console (ctrl + alt + backtick (`)) and type in \"list_item\"");
+
+            ConfigRegenerateScrap = Config.Bind("6. Transform - Rules", "Regenerate Scrap",
+                false,
+                "If true, then regenerating scrap that gets assimilated into Egocentrism is consumed instead of destroyed, allowing it to regenerate next stage.");
             #endregion
 
             #region Skills
             ConfigSkillsInfo = Config.Bind("7.0 Skills - All", "Skill Info", ":)",
             "Ignored. This is for information on what skills do.\n" +
-            "Conceit: Fire a burst of 3 lunar shards for 3x60% damage. Intended to be primary.\n" +
+            "Conceit: Fire a burst of 3 lunar shards for 3x100% damage. Intended to be primary.\n" +
+            "Lunar Minigun: Rapidly fire lunar needles for 80% damage. Finishes with a blast of 10 needles. Intended to be alt primary.\n" +
             "Chimera Bomb: Fire a tracking bomb for 450% damage. Intended to be secondary.\n" +
             "Twin Shot: Fire 6 lunar helices for 6x180% damage. Intended to be alt secondary.\n" +
             "Chimera Shell: Immediately gain barrier equal to 25% of combined max health, and jumpstart shield recharge. Damage taken to health or shield is capped to 10% of combined max health, but speed and healing are halved for 7 seconds. Intended to be utility.\n" +
             "Monopolize: Crush up to 5 items. Gain twice the items lost as Egocentrism. Always grants at least 1 Egocentrism. Cooldown 60s. Intended to be special.\n");
-            
+
+            string allowedSkillValues = "conceit, minigun, bomb, twinshot, shell, monopolize";
+
             ConfigPrimarySkill = Config.Bind("7.1 Skills - Primary", "Skill to Use", "conceit",
                 "What skill to replace primary with.\n" +
-                "Allowed values: conceit, monopolize, bomb, twinshot, shell");
+                $"Allowed values: {allowedSkillValues}");
             ConfigPrimaryReplacement = Config.Bind("7.1 Skills - Primary", "Enable Primary Replacement", true,
                 "If true, holding Egocentrism replaces the primary skill.");
             ConfigCorruptVisions = Config.Bind("7.1 Skills - Primary", "Corrupt Visions of Heresy", true,
@@ -508,7 +552,7 @@ namespace MegalomaniaPlugin
 
             ConfigSecondarySkill = Config.Bind("7.2 Skills - Secondary", "Skill to Use", "bomb",
                 "What skill to replace secondary with.\n" +
-                "Allowed values: conceit, monopolize, bomb, twinshot, shell");
+                $"Allowed values: {allowedSkillValues}");
             ConfigSecondaryReplacement = Config.Bind("7.2 Skills - Secondary", "Enable Secondary Replacement", false,
                 "If true, holding Egocentrism replaces the secondary skill.");
             ConfigCorruptHooks = Config.Bind("7.2 Skills - Secondary", "Corrupt Hooks of Heresy", true,
@@ -517,7 +561,7 @@ namespace MegalomaniaPlugin
 
             ConfigUtilitySkill = Config.Bind("7.3 Skills - Utility", "Skill to Use", "shell",
                 "What skill to replace utility with.\n" +
-                "Allowed values: conceit, monopolize, bomb, twinshot, shell");
+                $"Allowed values: {allowedSkillValues}");
             ConfigUtilityReplacement = Config.Bind("7.3 Skills - Utility", "Enable Utility Replacement", false,
                 "If true, holding Egocentrism replaces the utility skill.");
             ConfigCorruptStrides = Config.Bind("7.3 Skills - Utility", "Corrupt Strides of Heresy", true,
@@ -526,7 +570,7 @@ namespace MegalomaniaPlugin
 
             ConfigSpecialSkill = Config.Bind("7.4 Skills - Special", "Skill to Use", "monopolize",
                 "What skill to replace special with.\n" +
-                "Allowed values: conceit, monopolize, bomb, twinshot, shell");
+                $"Allowed values: {allowedSkillValues}");
             ConfigSpecialReplacement = Config.Bind("7.4 Skills - Special", "Enable Special Replacement", false,
                 "If true, holding Egocentrism replaces the special skill.");
             ConfigCorruptEssence = Config.Bind("7.4 Skills - Special", "Corrupt Essence of Heresy", true,
@@ -547,7 +591,6 @@ namespace MegalomaniaPlugin
 
         private void HookLunarSunStats()
         {
-            
             RecalculateStatsAPI.GetStatCoefficients += (sender, args) =>
             {
                 if (sender && sender.inventory)
@@ -561,25 +604,38 @@ namespace MegalomaniaPlugin
                     if (count > 0)
                     {
                         //flat health
-                        args.baseHealthAdd += count * (float)ConfigMaxHealthPerStack.Value;
+                        float health = (float)ConfigMaxHealthInitialStack.Value;
+                        health += count * (float)ConfigMaxHealthPerStack.Value;
+                        args.baseHealthAdd += health;
 
                         //health regen
-                        args.baseRegenAdd += count * (float)ConfigRegenPerStack.Value;
+                        float regen = (float)ConfigRegenInitialStack.Value;
+                        regen += count * (float)ConfigRegenPerStack.Value;
+                        args.baseRegenAdd += regen;
 
                         //movement speed
-                        args.baseMoveSpeedAdd += utils.determineStatBoost(ConfigMovementSpeedType.Value, (float)ConfigMovementSpeedPerStack.Value, (float)ConfigMovementSpeedBonusCap.Value, count);
+                        float move = (float)ConfigMovementSpeedInitialStack.Value;
+                        move += (float)ConfigMovementSpeedPerStack.Value;
+                        args.baseMoveSpeedAdd += utils.determineStatBoost(ConfigMovementSpeedType.Value, move, (float)ConfigMovementSpeedBonusCap.Value, count);
 
                         //damage
-                        args.baseDamageAdd += count * (float)ConfigDamagePerStack.Value;
+                        float dmg = (float)ConfigDamageInitialStack.Value;
+                        dmg += count * (float)ConfigDamagePerStack.Value;
+                        args.baseDamageAdd += dmg;
 
                         //attack speed
-                        args.attackSpeedMultAdd += utils.determineStatBoost(ConfigAttackSpeedType.Value, (float)ConfigAttackSpeedPerStack.Value, (float)ConfigAttackSpeedBonusCap.Value, count);
+                        float atk = (float)ConfigAttackSpeedInitialStack.Value;
+                        atk += (float)ConfigAttackSpeedPerStack.Value;
+                        args.attackSpeedMultAdd += utils.determineStatBoost(ConfigAttackSpeedType.Value, atk, (float)ConfigAttackSpeedBonusCap.Value, count);
 
                         //crit chance
-                        args.critAdd += 100 * count * (float)ConfigCritChancePerStack.Value;
+                        float crit = (float)ConfigCritChanceInitialStack.Value;
+                        crit += count * (float)ConfigCritChancePerStack.Value;
+                        args.critAdd += 100 * crit;
 
                         //armor
-                        float calcArmor = count * (float)ConfigArmorPerStack.Value;
+                        float calcArmor = (float)ConfigArmorInitialStack.Value;
+                        calcArmor += count * (float)ConfigArmorPerStack.Value;
                         if (ConfigArmorMax.Value > 0)
                             calcArmor = Math.Min(calcArmor, (float)ConfigArmorMax.Value);
                         args.armorAdd += calcArmor;
@@ -618,6 +674,5 @@ namespace MegalomaniaPlugin
                 utils.TransformItems(inventory, amount, null, self);
             }
         }
-
     }
 }

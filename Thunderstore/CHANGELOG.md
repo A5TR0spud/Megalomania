@@ -1,4 +1,19 @@
 
+## 1.2.0
+
+- Added config options for initial stat boosts
+- Max health, attack speed, and damage no longer increase from the initial stack of Egocentrism
+- Added config option to consume regenerating scrap when consumed by Egocentrism, allowing it to regenerate next stage
+- The short pickup description now changes based on config
+- Updated readme
+- Added Lunar Minigun skill
+- Polished Chimera Shell skill
+- Touched up Twin Shot and Chimera Bomb
+- Buffed Conceit damage 60% -> 100%
+- Attack skills now apply spread bloom (crosshair effects)
+
+*Max health, attack speed, and damage still increase from stack 2+ of Egocentrism.*
+
 ## 1.1.1
 
 - Adjusted Chimera Shell buff color to distinguish it from the vanilla Lunar Shell

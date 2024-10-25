@@ -5,7 +5,10 @@
   },
   "en": {
     "MEGALOMANIA_PRIMARY_NAME": "Conceit",
-    "MEGALOMANIA_PRIMARY_DESCRIPTION": "Fire a burst of 3 lunar shards for <style=cIsDamage>3x60% damage</style>.",
+    "MEGALOMANIA_PRIMARY_DESCRIPTION": "Fire a burst of 3 lunar shards for <style=cIsDamage>3x100% damage</style>.",
+    
+    "MEGALOMANIA_MINIGUN_NAME": "Lunar Minigun",
+    "MEGALOMANIA_MINIGUN_DESCRIPTION": "Rapidly fire lunar needles for <style=cIsDamage>80% damage</style>. Finishes with a blast of <style=cIsDamage>10</style> needles.",
 
     "MEGALOMANIA_BOMB_NAME": "Chimera Bomb",
     "MEGALOMANIA_BOMB_DESCRIPTION": "Fire a tracking lunar bomb for <style=cIsDamage>480% damage</style>.",

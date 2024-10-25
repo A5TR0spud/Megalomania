@@ -11,6 +11,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -38,9 +39,8 @@ namespace MegalomaniaPlugin.Skills
             ShellSkill.activationStateMachineName = "Weapon";
             ShellSkill.beginSkillCooldownOnSkillEnd = true;
             ShellSkill.canceledFromSprinting = false;
-            ShellSkill.cancelSprintingOnActivation = true;
+            ShellSkill.cancelSprintingOnActivation = false;
             ShellSkill.fullRestockOnAssign = false;
-            ShellSkill.interruptPriority = InterruptPriority.Any;
             ShellSkill.isCombatSkill = false;
             ShellSkill.mustKeyPress = false;
             ShellSkill.baseMaxStock = 1;
@@ -63,21 +63,21 @@ namespace MegalomaniaPlugin.Skills
             base.OnEnter();
             duration = baseDuration / base.attackSpeedStat;
             base.characterBody.healthComponent.ForceShieldRegen();
-            //float maxBarrierToGain = base.characterBody.healthComponent.fullCombinedHealth * 0.5f - base.characterBody.healthComponent.barrier;
-            //float barrierToGain = base.characterBody.healthComponent.fullCombinedHealth * 0.25f;
-            //if (barrierToGain > maxBarrierToGain) barrierToGain = maxBarrierToGain;
-            //if (barrierToGain > 0)
             base.characterBody.healthComponent.AddBarrier(base.characterBody.healthComponent.fullCombinedHealth * 0.25f);
-            base.characterBody.AddTimedBuff(EgoShelledBuff.EgoShellBuff, 7);
-            //base.characterBody.AddBuff(EgoShelledBuff.EgoShellBuff);
-            /*base.characterBody.AddTimedBuff(RoR2Content.Buffs.LunarShell, 7);
-            base.characterBody.AddTimedBuff(RoR2Content.Buffs.Slow50, 7);
-            base.characterBody.AddTimedBuff(RoR2Content.Buffs.HealingDisabled, 7);*/
+            Util.PlayAttackSpeedSound("Play_lunar_golem_attack2_buildUp", gameObject, base.attackSpeedStat + 1.4f);
         }
 
         public override void OnExit()
         {
             base.OnExit();
+            base.characterBody.AddTimedBuff(EgoShelledBuff.EgoShellBuff, 7);
+            Util.PlaySound("Play_lunar_golem_attack2_shieldActivate", gameObject);
+            EffectData effectData = new EffectData
+            {
+                origin = base.characterBody.footPosition,
+                rotation = UnityEngine.Quaternion.identity
+            };
+            EffectManager.SpawnEffect(LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/MonstersOnShrineUse"), effectData, transmit: true);
         }
 
         public override void FixedUpdate()

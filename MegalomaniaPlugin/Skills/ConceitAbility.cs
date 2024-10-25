@@ -27,9 +27,10 @@ namespace MegalomaniaPlugin.Skills
         private int shotsFiredInBurst = 0;
         private float duration;
         public static SkillDef ConceitSkill;
-        static float damageCoefficient = 0.6f;
+        static float damageCoefficient = 1.0f;
         static float force = 0.1f;
         public static GameObject projectilePrefab;
+        public static float spreadBloomValue = 0.15f;
         //public static GameObject muzzleFlashPrefab;
 
         public static void initEgoPrimary(Sprite Icon)
@@ -48,7 +49,6 @@ namespace MegalomaniaPlugin.Skills
             ConceitSkill.canceledFromSprinting = false;
             ConceitSkill.cancelSprintingOnActivation = true;
             ConceitSkill.fullRestockOnAssign = true;
-            ConceitSkill.interruptPriority = InterruptPriority.Any;
             ConceitSkill.isCombatSkill = true;
             ConceitSkill.mustKeyPress = false;
             ConceitSkill.baseMaxStock = 1;
@@ -118,6 +118,10 @@ namespace MegalomaniaPlugin.Skills
                 //SimpleMuzzleFlash(muzzleFlashPrefab, base.gameObject, "MuzzleLaser", transmit: false);
             }*/
             //TrajectoryAimAssist.ApplyTrajectoryAimAssist(ref aimRay, projectilePrefab, base.gameObject, 50);
+            if ((bool)base.characterBody)
+            {
+                base.characterBody.AddSpreadBloom(spreadBloomValue);
+            }
             Vector3 forward = Util.ApplySpread(aimRay.direction, 0f, 1f, 1f, 0.5f);
             Util.PlaySound("Play_lunar_exploder_m1_fire", gameObject);//, attackSpeedStat);
             ProjectileManager.instance.FireProjectile(projectilePrefab, aimRay.origin, Util.QuaternionSafeLookRotation(forward), gameObject, damageStat * damageCoefficient, force, RollCrit(), speedOverride: 150);
