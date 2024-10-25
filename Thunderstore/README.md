@@ -13,4 +13,4 @@ By default:
 
 Config options include Irradiant Pearl-like stat boosts, bomb generation frequency, bomb damage, how the transformation should happen, when, what items and rarities to prioritize, skills to replace, what skills to replace with.
 
-Prioritized items and rarities are not gauranteed to be chosen, instead they are weighted higher.
+Prioritized items and rarities are not guaranteed to be chosen, instead they are weighted higher.
