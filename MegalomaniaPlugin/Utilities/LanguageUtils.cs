@@ -56,7 +56,7 @@ namespace MegalomaniaPlugin.Utilities
         private static bool benefitStats;
         private static bool harmStats;
 
-        public static void init(Utils utils)
+        public static void start()
         {
             bombsAreEnabled = MegalomaniaPlugin.ConfigEnableBombs.Value;
             bombInitialGenerationTime = MegalomaniaPlugin.ConfigBombCreationRate.Value;
@@ -101,13 +101,13 @@ namespace MegalomaniaPlugin.Utilities
             initMove = MegalomaniaPlugin.ConfigMovementSpeedInitialStack.Value * 100;
             moveSpeed = MegalomaniaPlugin.ConfigMovementSpeedPerStack.Value * 100;
 
-            primaryReplacementID = utils.lookupSkill(MegalomaniaPlugin.ConfigPrimarySkill.Value.Trim().ToLower()).skillNameToken;
+            primaryReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigPrimarySkill.Value.Trim().ToLower()).skillNameToken;
             doReplacePrimary = MegalomaniaPlugin.ConfigPrimaryReplacement.Value && !primaryReplacementID.IsNullOrWhiteSpace();
-            secondaryReplacementID = utils.lookupSkill(MegalomaniaPlugin.ConfigSecondarySkill.Value.Trim().ToLower()).skillNameToken;
+            secondaryReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigSecondarySkill.Value.Trim().ToLower()).skillNameToken;
             doReplaceSecondary = MegalomaniaPlugin.ConfigSecondaryReplacement.Value && !secondaryReplacementID.IsNullOrWhiteSpace();
-            utilityReplacementID = utils.lookupSkill(MegalomaniaPlugin.ConfigUtilitySkill.Value.Trim().ToLower()).skillNameToken;
+            utilityReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigUtilitySkill.Value.Trim().ToLower()).skillNameToken;
             doReplaceUtility = MegalomaniaPlugin.ConfigUtilityReplacement.Value && !utilityReplacementID.IsNullOrWhiteSpace();
-            specialReplacementID = utils.lookupSkill(MegalomaniaPlugin.ConfigSpecialSkill.Value.Trim().ToLower()).skillNameToken;
+            specialReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigSpecialSkill.Value.Trim().ToLower()).skillNameToken;
             doReplaceSpecial = MegalomaniaPlugin.ConfigSpecialReplacement.Value && !specialReplacementID.IsNullOrWhiteSpace();
 
             skillReplacementCount = 0;
@@ -132,10 +132,10 @@ namespace MegalomaniaPlugin.Utilities
                 || attackSpeed < 0.0 || initATK < 0.0
                 || moveSpeed < 0.0 || initMove < 0.0;
 
-            initEN(utils);
+            setTokens();
         }
 
-        private static void initEN(Utils utils)
+        private static void setTokens()
         {
             string bombGenString = "";
             if (bombsAreEnabled)
@@ -214,7 +214,7 @@ namespace MegalomaniaPlugin.Utilities
                 }
 
                 string selection = "random";
-                switch (utils.parsedConversionSelectionType)
+                switch (Utils.parsedConversionSelectionType)
                 {
                     case Utils.ConversionSelectionType.weighted:
                         selection = "weighted";
@@ -225,7 +225,7 @@ namespace MegalomaniaPlugin.Utilities
                 }
 
                 string convertTo = "this";
-                if (utils.parsedItemConvertToList.Count > 1)
+                if (Utils.parsedItemConvertToList.Count > 1)
                 {
                     convertTo = "an";
                 }
@@ -416,7 +416,7 @@ namespace MegalomaniaPlugin.Utilities
             "en");
         }
 
-        //this function exists because i couldnt get languageapi to work
+        //this function exists because i couldnt get languageapi to grab the translation
         private static string skillReplacementLookupEN(string lookupID)
         {
             string s = lookupID;

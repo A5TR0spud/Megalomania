@@ -39,7 +39,7 @@ namespace MegalomaniaPlugin
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "A5TR0spud";
         public const string PluginName = "Megalomania";
-        public const string PluginVersion = "1.2.0";
+        public const string PluginVersion = "1.2.1";
 
         public static AssetBundle megalomaniaAssetBundle;
         public static Sprite EgoPrimarySprite;
@@ -156,14 +156,12 @@ namespace MegalomaniaPlugin
         public static ItemDef transformToken;
         #endregion
 
-        public MegalomaniaEgoBehavior megalomaniaEgoBehavior { get; set; }
-        public Utils utils { get; set; }
+        public static MegalomaniaEgoBehavior megalomaniaEgoBehavior { get; set; }
 
         // The Awake() method is run at the very start when the game is initialized.
         public void Awake()
         {
             Log.Init(Logger);
-            utils = new Utils();
             megalomaniaEgoBehavior = new MegalomaniaEgoBehavior();
 
             LoadAssets();
@@ -174,10 +172,10 @@ namespace MegalomaniaPlugin
 
             InitBuffs();
             InitItems();
-            utils.ParseRarityPriorityList();
-            utils.ParseConversionSelectionType();
+            Utils.ParseRarityPriorityList();
+            Utils.ParseConversionSelectionType();
             InitSkills();
-            utils.initSkillsList();
+            Utils.initSkillsList();
 
             //parse items after items have loaded
             On.RoR2.ItemCatalog.SetItemDefs += ItemCatalog_SetItemDefs;
@@ -194,9 +192,9 @@ namespace MegalomaniaPlugin
                 return;
 
             //Override Egocentrism code, haha. Sorry mate.
-            megalomaniaEgoBehavior.init(utils);
+            megalomaniaEgoBehavior.init();
 
-            LanguageUtils.init(utils);
+            LanguageUtils.start();
         }
 
         private void CharacterBody_OnInventoryChanged(On.RoR2.CharacterBody.orig_OnInventoryChanged orig, CharacterBody self)
@@ -205,12 +203,12 @@ namespace MegalomaniaPlugin
 
             if ((bool)skillLocator && (bool)self.master && (bool)self.inventory)
             {
-                RoR2.Skills.SkillDef primarySkillRep = utils.lookupSkill(ConfigPrimarySkill.Value);
+                RoR2.Skills.SkillDef primarySkillRep = Utils.lookupSkill(ConfigPrimarySkill.Value);
                 if (ConfigPrimaryReplacement.Value && (bool)primarySkillRep)
                 {
                     if (ConfigCorruptVisions.Value)
                     {
-                        utils.CorruptItem(self.inventory, RoR2Content.Items.LunarPrimaryReplacement.itemIndex, self.master);
+                        Utils.CorruptItem(self.inventory, RoR2Content.Items.LunarPrimaryReplacement.itemIndex, self.master);
                         self.ReplaceSkillIfItemPresent(skillLocator.primary, DLC1Content.Items.LunarSun.itemIndex, primarySkillRep);
                     }
                     else if (self.inventory.GetItemCount(RoR2Content.Items.LunarPrimaryReplacement) == 0)
@@ -219,12 +217,12 @@ namespace MegalomaniaPlugin
                     }
                 }
 
-                RoR2.Skills.SkillDef secondarySkillRep = utils.lookupSkill(ConfigSecondarySkill.Value);
+                RoR2.Skills.SkillDef secondarySkillRep = Utils.lookupSkill(ConfigSecondarySkill.Value);
                 if (ConfigSecondaryReplacement.Value && (bool)secondarySkillRep)
                 {
                     if (ConfigCorruptHooks.Value)
                     {
-                        utils.CorruptItem(self.inventory, RoR2Content.Items.LunarSecondaryReplacement.itemIndex, self.master);
+                        Utils.CorruptItem(self.inventory, RoR2Content.Items.LunarSecondaryReplacement.itemIndex, self.master);
                         self.ReplaceSkillIfItemPresent(skillLocator.secondary, DLC1Content.Items.LunarSun.itemIndex, secondarySkillRep);
                     }
                     else if (self.inventory.GetItemCount(RoR2Content.Items.LunarSecondaryReplacement) == 0)
@@ -233,12 +231,12 @@ namespace MegalomaniaPlugin
                     }
                 }
 
-                RoR2.Skills.SkillDef utilitySkillRep = utils.lookupSkill(ConfigUtilitySkill.Value);
+                RoR2.Skills.SkillDef utilitySkillRep = Utils.lookupSkill(ConfigUtilitySkill.Value);
                 if (ConfigUtilityReplacement.Value && (bool)utilitySkillRep)
                 {
                     if (ConfigCorruptStrides.Value)
                     {
-                        utils.CorruptItem(self.inventory, RoR2Content.Items.LunarUtilityReplacement.itemIndex, self.master);
+                        Utils.CorruptItem(self.inventory, RoR2Content.Items.LunarUtilityReplacement.itemIndex, self.master);
                         self.ReplaceSkillIfItemPresent(skillLocator.utility, DLC1Content.Items.LunarSun.itemIndex, utilitySkillRep);
                     }
                     else if (self.inventory.GetItemCount(RoR2Content.Items.LunarUtilityReplacement) == 0)
@@ -247,12 +245,12 @@ namespace MegalomaniaPlugin
                     }
                 }
 
-                RoR2.Skills.SkillDef specialSkillRep = utils.lookupSkill(ConfigSpecialSkill.Value);
+                RoR2.Skills.SkillDef specialSkillRep = Utils.lookupSkill(ConfigSpecialSkill.Value);
                 if (ConfigSpecialReplacement.Value && (bool)specialSkillRep)
                 {
                     if (ConfigCorruptEssence.Value)
                     {
-                        utils.CorruptItem(self.inventory, RoR2Content.Items.LunarSpecialReplacement.itemIndex, self.master);
+                        Utils.CorruptItem(self.inventory, RoR2Content.Items.LunarSpecialReplacement.itemIndex, self.master);
                         self.ReplaceSkillIfItemPresent(skillLocator.special, DLC1Content.Items.LunarSun.itemIndex, specialSkillRep);
                     }
                     else if (self.inventory.GetItemCount(RoR2Content.Items.LunarSpecialReplacement) == 0)
@@ -278,8 +276,8 @@ namespace MegalomaniaPlugin
         private void ItemCatalog_SetItemDefs(On.RoR2.ItemCatalog.orig_SetItemDefs orig, ItemDef[] newItemDefs)
         {
             orig(newItemDefs);
-            utils.ParseItemPriorityList();
-            utils.ParseItemConvertToList();
+            Utils.ParseItemPriorityList();
+            Utils.ParseItemConvertToList();
         }
 
         private void InitItems()
@@ -314,7 +312,7 @@ namespace MegalomaniaPlugin
         private void InitSkills()
         {
             ConceitAbility.initEgoPrimary(EgoPrimarySprite);
-            MonopolizeAbility.initEgoMonopolize(EgoMonopolizeSprite, utils);
+            MonopolizeAbility.initEgoMonopolize(EgoMonopolizeSprite);
             BombAbility.initBombAbility(EgoBombSprite);
             TwinShotAbility.initEgoTwinShot(EgoTwinShotSprite);
             ShellAbility.initEgoShell(EgoShellSprite);
@@ -616,7 +614,7 @@ namespace MegalomaniaPlugin
                         //movement speed
                         float move = (float)ConfigMovementSpeedInitialStack.Value;
                         move += (float)ConfigMovementSpeedPerStack.Value;
-                        args.baseMoveSpeedAdd += utils.determineStatBoost(ConfigMovementSpeedType.Value, move, (float)ConfigMovementSpeedBonusCap.Value, count);
+                        args.baseMoveSpeedAdd += Utils.determineStatBoost(ConfigMovementSpeedType.Value, move, (float)ConfigMovementSpeedBonusCap.Value, count);
 
                         //damage
                         float dmg = (float)ConfigDamageInitialStack.Value;
@@ -626,7 +624,7 @@ namespace MegalomaniaPlugin
                         //attack speed
                         float atk = (float)ConfigAttackSpeedInitialStack.Value;
                         atk += (float)ConfigAttackSpeedPerStack.Value;
-                        args.attackSpeedMultAdd += utils.determineStatBoost(ConfigAttackSpeedType.Value, atk, (float)ConfigAttackSpeedBonusCap.Value, count);
+                        args.attackSpeedMultAdd += Utils.determineStatBoost(ConfigAttackSpeedType.Value, atk, (float)ConfigAttackSpeedBonusCap.Value, count);
 
                         //crit chance
                         float crit = (float)ConfigCritChanceInitialStack.Value;
@@ -671,7 +669,7 @@ namespace MegalomaniaPlugin
                 {
                     amount = Math.Min(amount, ConfigMaxTransformationsPerStage.Value);
                 }
-                utils.TransformItems(inventory, amount, null, self);
+                Utils.TransformItems(inventory, amount, null, self);
             }
         }
     }

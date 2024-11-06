@@ -7,6 +7,11 @@ Default values:
 	Prevents conversion of other lunar items
 	Prioritizes items of a higher rarity while maintaining randomness
 
+IDEALLY:
+SWITCH FROM SELECTING SKILLS IN CONFIG TO SOME SORT OF,,, SKILL SELECT MENU? CONFIG WILL STILL EXIST TO CHANGE THE SKILL WHITELIST.
+CHANGE MONOPOLIZE SO THAT THE VFX ITEM TRANSFER ORBS SWAP MID-AIR TO EGOCENTRISM
+i will not be doing either of these
+
 Config Options:
 (int)   Initial Health Bonus: 0
 (int)   Health per stack: +5
@@ -89,6 +94,8 @@ Conversion Type: EGOCENTRISM
 		-items are converted to egocentrism
 	LUNAR
 		-items are converted to a random lunar item, not necessarily Egocentrism
+
+A lunar version of a bunch of vanilla items for ego to convert into...
 
 Conversion Rules: WEIGHTED
 	VANILLA

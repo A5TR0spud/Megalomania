@@ -27,12 +27,10 @@ namespace MegalomaniaPlugin.Skills
         private float duration;
         public static SkillDef MonopolizeSkill;
         public static GameObject muzzleFlashPrefab;
-        public static Utils utils;
 
-        public static void initEgoMonopolize(Sprite Icon, Utils ut)
+        public static void initEgoMonopolize(Sprite Icon)
         {
             muzzleFlashPrefab = LegacyResourcesAPI.Load<GameObject>("Prefabs/Effects/MuzzleFlashes/MuzzleflashLunarShard");
-            utils = ut;
 
             MonopolizeSkill = ScriptableObject.CreateInstance<EgoSkillDef>();
 
@@ -103,7 +101,7 @@ namespace MegalomaniaPlugin.Skills
                 };
                 EffectManager.SpawnEffect(muzzleFlashPrefab, effectData, false);
             }
-            List<ItemIndex> transList = utils.TransformItems(base.characterBody.inventory, 5, null, base.characterBody.master, true, notifUI: false);
+            List<ItemIndex> transList = Utils.TransformItems(base.characterBody.inventory, 5, null, base.characterBody.master, true, notifUI: false);
             int transCount = transList.Count;
             //base.characterBody.inventory.GiveItem(DLC1Content.Items.LunarSun, Math.Max(transCount, 1));
             if (transCount < 1)
