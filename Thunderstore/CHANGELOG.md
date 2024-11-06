@@ -1,4 +1,10 @@
 
+## 1.2.1 - *SotS 1.3.5 Fix*
+
+- Fixed language override not working
+- Fixed Egocentrism causing stacks of curse for some reason
+- Internally set some things straight
+
 ## 1.2.0
 
 - Added config options for initial stat boosts

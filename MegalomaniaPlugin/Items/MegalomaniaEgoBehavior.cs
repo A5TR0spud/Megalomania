@@ -13,12 +13,10 @@ namespace MegalomaniaPlugin.Items
 {
     public class MegalomaniaEgoBehavior
     {
-        Utils utils { get; set; }
         private readonly BullseyeSearch search = new BullseyeSearch();
 
-        public void init(Utils ut)
+        public void init()
         {
-            utils = ut;
             On.RoR2.LunarSunBehavior.FixedUpdate += LunarSunBehavior_FixedUpdate;
             On.RoR2.LunarSunBehavior.GetMaxProjectiles += LunarSunBehavior_GetMaxProjectiles;
 
@@ -105,7 +103,7 @@ namespace MegalomaniaPlugin.Items
             }
         }
 
-        private void LunarSunBehavior_FixedUpdate(On.RoR2.LunarSunBehavior.orig_FixedUpdate orig, LunarSunBehavior self)
+        private static void LunarSunBehavior_FixedUpdate(On.RoR2.LunarSunBehavior.orig_FixedUpdate orig, LunarSunBehavior self)
         {
             //Grab private variables first, makes the code readable
             CharacterBody body = self.GetFieldValue<CharacterBody>("body");
@@ -126,12 +124,12 @@ namespace MegalomaniaPlugin.Items
             self.SetFieldValue("transformTimer", transformTimer);
         }
 
-        private int LunarSunBehavior_GetMaxProjectiles(On.RoR2.LunarSunBehavior.orig_GetMaxProjectiles orig, Inventory inventory)
+        private static int LunarSunBehavior_GetMaxProjectiles(On.RoR2.LunarSunBehavior.orig_GetMaxProjectiles orig, Inventory inventory)
         {
             return (int)(MegalomaniaPlugin.ConfigBombCap.Value + (inventory.GetItemCount(DLC1Content.Items.LunarSun) - 1) * MegalomaniaPlugin.ConfigBombStackingCap.Value);
         }
 
-        private void handleBombs(CharacterBody body, ref float projectileTimer, int stack, GameObject projectilePrefab)
+        private static void handleBombs(CharacterBody body, ref float projectileTimer, int stack, GameObject projectilePrefab)
         {
             float denominator = (stack - 1) * (float)MegalomaniaPlugin.ConfigBombCreationStackingMultiplier.Value + 1;
             if (!body.master.IsDeployableLimited(DeployableSlot.LunarSunBomb) &&
@@ -171,7 +169,7 @@ namespace MegalomaniaPlugin.Items
             }
         }
 
-        private void handleTransUpdate(CharacterBody body, ref float transformTimer, int stack, Xoroshiro128Plus transformRng)
+        private static void handleTransUpdate(CharacterBody body, ref float transformTimer, int stack, Xoroshiro128Plus transformRng)
         {
             //with acceptance
             transformTimer += Time.fixedDeltaTime;
@@ -198,7 +196,7 @@ namespace MegalomaniaPlugin.Items
                 return;
             }
 
-            utils.TransformItems(body.inventory, 1, transformRng, body.master);
+            Utils.TransformItems(body.inventory, 1, transformRng, body.master);
         }
     }
 }

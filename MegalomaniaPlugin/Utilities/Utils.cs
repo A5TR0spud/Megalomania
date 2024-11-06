@@ -20,16 +20,16 @@ namespace MegalomaniaPlugin.Utilities
     public class Utils
     {
         //Parsed Rarity:Priority List
-        public Dictionary<ItemTier, int> parsedRarityPriorityList;
+        public static Dictionary<ItemTier, int> parsedRarityPriorityList;
 
         //Parsed Item:Priority List
-        public Dictionary<ItemIndex, int> parsedItemPriorityList;
+        public static Dictionary<ItemIndex, int> parsedItemPriorityList;
 
         //Selection mode
-        public ConversionSelectionType parsedConversionSelectionType;
+        public static ConversionSelectionType parsedConversionSelectionType;
 
         //Items to convert to
-        public Dictionary<ItemIndex, int> parsedItemConvertToList;
+        public static Dictionary<ItemIndex, int> parsedItemConvertToList;
 
         //Thank you ConfigEgocentrism by Judgy53 for code reference:
         //https://github.com/Judgy53/ConfigEgocentrism/blob/main/ConfigEgocentrism/ConfigEgocentrismPlugin.cs
@@ -69,9 +69,9 @@ namespace MegalomaniaPlugin.Utilities
             priority = 1
         }
 
-        private Dictionary<string, SkillDef> SkillLookup { get; set; }
+        private static Dictionary<string, SkillDef> SkillLookup { get; set; }
 
-        public void initSkillsList()
+        public static void initSkillsList()
         {
             SkillLookup = new Dictionary<string, SkillDef>();
             SkillLookup.Add("conceit", ConceitAbility.ConceitSkill);
@@ -83,7 +83,7 @@ namespace MegalomaniaPlugin.Utilities
         }
 
 #nullable enable
-        public SkillDef? lookupSkill(string str)
+        public static SkillDef? lookupSkill(string str)
         {
             if (SkillLookup.TryGetValue(str.ToLower().Trim(), out SkillDef sdef))
             {
@@ -93,7 +93,7 @@ namespace MegalomaniaPlugin.Utilities
         }
 #nullable restore
 
-        public void CorruptItem(Inventory inventory, ItemIndex toCorrupt, CharacterMaster master)
+        public static void CorruptItem(Inventory inventory, ItemIndex toCorrupt, CharacterMaster master)
         {
             int ego = inventory.GetItemCount(DLC1Content.Items.LunarSun);
             if (ego < 1) return;
@@ -106,7 +106,7 @@ namespace MegalomaniaPlugin.Utilities
             }
         }
 
-        public List<ItemIndex> TransformItems(Inventory inventory, int amount, Xoroshiro128Plus transformRng, CharacterMaster master, bool ignoreCap = false, bool notifUI = true)
+        public static List<ItemIndex> TransformItems(Inventory inventory, int amount, Xoroshiro128Plus transformRng, CharacterMaster master, bool ignoreCap = false, bool notifUI = true)
         {
             List<ItemIndex> toReturn = new List<ItemIndex>();
             if (!NetworkServer.active)
@@ -227,7 +227,7 @@ namespace MegalomaniaPlugin.Utilities
             return toReturn;
         }
 
-        public int weighSingleItem(ItemIndex itemIndex, int itemCount)
+        public static int weighSingleItem(ItemIndex itemIndex, int itemCount)
         {
             //don't convert egocentrism
             if (itemIndex == DLC1Content.Items.LunarSun.itemIndex)
@@ -273,7 +273,7 @@ namespace MegalomaniaPlugin.Utilities
             return weight;
         }
 
-        public Dictionary<ItemIndex, int> weighInventory(Inventory inventory)
+        public static Dictionary<ItemIndex, int> weighInventory(Inventory inventory)
         {
             List<ItemIndex> inventoryItemsList = new List<ItemIndex>(inventory.itemAcquisitionOrder);
 
@@ -292,7 +292,7 @@ namespace MegalomaniaPlugin.Utilities
             return weightedInventory;
         }
 
-        public List<T> getWeightedDictKeyAndBackup<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
+        public static List<T> getWeightedDictKeyAndBackup<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
         {
             Dictionary<T, int> copy = new Dictionary<T, int>();
             foreach (var kvp in dict)
@@ -311,7 +311,7 @@ namespace MegalomaniaPlugin.Utilities
             return list;
         }
 
-        public T getPriorityDictKey<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
+        public static T getPriorityDictKey<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
         {
             int highestFound = 0;
             List<T> highestTsFound = new List<T>();
@@ -332,7 +332,7 @@ namespace MegalomaniaPlugin.Utilities
             return highestTsFound[rng.RangeInt(0, highestTsFound.Count)];
         }
 
-        public T getWeightedDictKey<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
+        public static T getWeightedDictKey<T>(Dictionary<T, int> dict, Xoroshiro128Plus rng)
         {
             int totalWeight = 0;
             foreach (var weight in dict.Values)
@@ -354,7 +354,7 @@ namespace MegalomaniaPlugin.Utilities
             return dict.FirstOrDefault().Key;
         }
 
-        public float determineStatBoost(bool diminishing, float perStack, float max, float stacksize)
+        public static float determineStatBoost(bool diminishing, float perStack, float max, float stacksize)
         {
             if (max == 0)
                 //no buff
@@ -370,7 +370,7 @@ namespace MegalomaniaPlugin.Utilities
                 return perStack * stacksize;
         }
 
-        public void ParseItemConvertToList()
+        public static void ParseItemConvertToList()
         {
             parsedItemConvertToList = new Dictionary<ItemIndex, int>();
 
@@ -418,7 +418,7 @@ namespace MegalomaniaPlugin.Utilities
             }
         }
 
-        public void ParseConversionSelectionType()
+        public static void ParseConversionSelectionType()
         {
             string toTest = MegalomaniaPlugin.ConfigConversionSelectionType.Value.Trim().ToLower();
             if (Enum.TryParse(toTest, out ConversionSelectionType conversionType))
@@ -432,7 +432,7 @@ namespace MegalomaniaPlugin.Utilities
             return;
         }
 
-        public void ParseRarityPriorityList()
+        public static void ParseRarityPriorityList()
         {
             parsedRarityPriorityList = new Dictionary<ItemTier, int>();
 
@@ -486,7 +486,7 @@ namespace MegalomaniaPlugin.Utilities
             }
         }
 
-        public void ParseItemPriorityList()
+        public static void ParseItemPriorityList()
         {
             parsedItemPriorityList = new Dictionary<ItemIndex, int>();
 
