@@ -416,7 +416,6 @@ namespace MegalomaniaPlugin
                 "Whether the vanilla seeking behavior should apply. If a bomb collides with an enemy, it may still explode.");
             ConfigOnHitBombAttack = Config.Bind("4. Bombs - Toggles", "On Hit: Bombs Attack", "none",
                 "If \"proc\", then any damage done against an enemy will have a 100% chance to also target an Egocentrism bomb at that enemy.\n" +
-                "It doesn't care about proc coefficient (unless it's zero), but can't proc itself.\n" +
                 "If \"create\", then any damage done has a 30% chance to create a bomb and then immediately target a bomb to the struck enemy.\n" +
                 "If \"none\", it will behave as usual (doing nothing special).\n" +
                 "If anything else, it'll log a warning and default to none.");
