@@ -12,7 +12,6 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 
-		<PackageReference Include="R2API" Version="5.0.*" />
 		<PackageReference Include="BepInEx.Core" Version="5.4.*" />
 
 		<PackageReference Include="R2API.Items" Version="1.0.*" />
