@@ -8,12 +8,17 @@ using R2API.Utils;
 using System.Linq;
 using System.Numerics;
 using MegalomaniaPlugin.Utilities;
+using R2API;
+using UnityEngine.Networking;
+using System.Collections;
 
 namespace MegalomaniaPlugin.Items
 {
     public class MegalomaniaEgoBehavior
     {
         private readonly BullseyeSearch search = new BullseyeSearch();
+        public static ModdedProcType LunarSunBombProc = ProcTypeAPI.ReserveProcType();
+        private static GameObject projectilePrefab;
 
         public void init()
         {
@@ -24,6 +29,89 @@ namespace MegalomaniaPlugin.Items
             {
                 On.RoR2.LunarSunBehavior.OnEnable += LunarSunBehavior_OnEnable;
                 On.RoR2.LunarSunBehavior.OnDisable += LunarSunBehavior_OnDisable;
+            }
+
+            On.RoR2.GlobalEventManager.ProcessHitEnemy += GlobalEventManager_ProcessHitEnemy;
+        }
+
+        private void GlobalEventManager_ProcessHitEnemy(On.RoR2.GlobalEventManager.orig_ProcessHitEnemy orig, GlobalEventManager self, DamageInfo damageInfo, GameObject victim)
+        {
+            orig(self, damageInfo, victim);
+
+            //copied from base
+            if (damageInfo.procCoefficient == 0f || damageInfo.rejected || !NetworkServer.active)
+            {
+                return;
+            }
+            if (!damageInfo.attacker || !(damageInfo.procCoefficient > 0f))
+            {
+                return;
+            }
+
+            ProcChainMask procChainMask = damageInfo.procChainMask;
+
+            //further tests for on hit bomb attack
+            if (Utils.parsedOnHitBombAttackType == Utils.OnHitBombAttackType.none
+                || procChainMask.HasModdedProc(LunarSunBombProc))
+                return;
+            CharacterBody attacker = damageInfo.attacker.GetComponent<CharacterBody>();
+            if (!(bool)attacker)
+                return;
+            CharacterMaster master = attacker.master;
+            if (!(bool)master)
+                return;
+            Inventory inventory = attacker.inventory;
+            if (!(bool)inventory)
+                inventory = master.inventory;
+            if (!(bool)inventory)
+                return;
+            int egoCount = inventory.GetItemCount(DLC1Content.Items.LunarSun);
+            if (egoCount < 1)
+                return;
+
+            HurtBox target = victim.GetComponent<HurtBox>();
+            CharacterBody victimBody = victim.GetComponent<CharacterBody>();
+            if (!(bool)target && (bool)victimBody)
+                target = victimBody.mainHurtBox;
+            if (!(bool)target)
+                return;
+
+            bool doTarget = false;
+            //letsago
+            if (Utils.parsedOnHitBombAttackType == Utils.OnHitBombAttackType.proc
+                && Util.CheckRoll(100f * damageInfo.procCoefficient, master.luck, master))
+            {
+                procChainMask.AddModdedProc(LunarSunBombProc);
+                doTarget = true;
+            }
+            else if (Utils.parsedOnHitBombAttackType == Utils.OnHitBombAttackType.create
+                && Util.CheckRoll(30f * damageInfo.procCoefficient, master.luck, master))
+            {
+                procChainMask.AddModdedProc(LunarSunBombProc);
+                FireProjectileInfo bombInfo = createBombInfo(attacker, egoCount);
+                bombInfo.procChainMask = procChainMask;
+                ProjectileManager.instance.FireProjectile(bombInfo);
+
+                doTarget = true;
+            }
+
+            if (doTarget)
+            {
+                List<DeployableInfo> list = attacker.master.deployablesList;
+                foreach (DeployableInfo info in list)
+                {
+                    if (info.slot == DeployableSlot.LunarSunBomb)
+                    {
+                        ProjectileSphereTargetFinder targetFinder = info.deployable.gameObject.GetComponent<ProjectileSphereTargetFinder>();
+                        if (!(bool)targetFinder)
+                            continue;
+                        if (targetFinder.hasTarget)
+                            continue;
+
+                        targetFinder.SetTarget(target);
+                        break;
+                    }
+                }
             }
         }
 
@@ -107,7 +195,8 @@ namespace MegalomaniaPlugin.Items
         {
             //Grab private variables first, makes the code readable
             CharacterBody body = self.GetFieldValue<CharacterBody>("body");
-            GameObject projectilePrefab = self.GetFieldValue<GameObject>("projectilePrefab");
+            GameObject projectilePrefab1 = self.GetFieldValue<GameObject>("projectilePrefab");
+            if ((bool)projectilePrefab1) projectilePrefab = projectilePrefab1;
             int stack = self.GetFieldValue<int>("stack");
             float projectileTimer = self.GetFieldValue<float>("projectileTimer");
             float transformTimer = self.GetFieldValue<float>("transformTimer");
@@ -148,25 +237,44 @@ namespace MegalomaniaPlugin.Items
                 else
                     Log.Error("LunarSunBehavior: Unable to modify projectile Range (ProjectileSphereTargetFinder component not found)");
 
-                FireProjectileInfo fireProjectileInfo = default;
-                fireProjectileInfo.projectilePrefab = projectilePrefab;
-                fireProjectileInfo.crit = body.RollCrit();
-                fireProjectileInfo.damage = body.damage * (float)(MegalomaniaPlugin.ConfigBombDamage.Value + MegalomaniaPlugin.ConfigBombStackingDamage.Value * stack);
-                fireProjectileInfo.damageColorIndex = DamageColorIndex.Item;
-                fireProjectileInfo.force = 0f;
-                fireProjectileInfo.owner = body.gameObject;
-                fireProjectileInfo.position = body.transform.position;
-                fireProjectileInfo.rotation = UnityEngine.Quaternion.identity;
-                ProjectileManager.instance.FireProjectile(fireProjectileInfo);
-                if (MegalomaniaPlugin.ConfigBombStacking.Value)
-                {
-                    body.statsDirty = true;
-                    //DamageInfo damageInfo = new DamageInfo();
-                    //damageInfo.damage = (float)ConfigMaxHealthPerStack.Value;
-                    //damageInfo.damageType = DamageType.Silent;
-                    //body.healthComponent.TakeDamage(damageInfo);
-                }
+                FireProjectileInfo bombInfo = createBombInfo(body, stack);
+                ProjectileManager.instance.FireProjectile(bombInfo);
             }
+        }
+
+        private static FireProjectileInfo createBombInfo(CharacterBody owner, int? stack = null)
+        {
+            if (stack == null || stack < 1)
+            {
+                stack = owner.inventory.GetItemCount(DLC1Content.Items.LunarSun);
+            }
+            if (stack < 1)
+            {
+                stack = 1;
+            }
+            FireProjectileInfo fireProjectileInfo = default;
+            fireProjectileInfo.projectilePrefab = projectilePrefab;
+            fireProjectileInfo.crit = owner.RollCrit();
+            fireProjectileInfo.damage = owner.damage * (float)(MegalomaniaPlugin.ConfigBombDamage.Value + MegalomaniaPlugin.ConfigBombStackingDamage.Value * stack);
+            fireProjectileInfo.damageColorIndex = DamageColorIndex.Item;
+            fireProjectileInfo.force = 0f;
+            fireProjectileInfo.owner = owner.gameObject;
+            fireProjectileInfo.position = owner.transform.position;
+            fireProjectileInfo.rotation = UnityEngine.Quaternion.identity;
+            if (MegalomaniaPlugin.ConfigBombStacking.Value)
+            {
+                owner.statsDirty = true;
+                //DamageInfo damageInfo = new DamageInfo();
+                //damageInfo.damage = (float)ConfigMaxHealthPerStack.Value;
+                //damageInfo.damageType = DamageType.Silent;
+                //body.healthComponent.TakeDamage(damageInfo);
+            }
+
+            ProcChainMask procChainMask = default(ProcChainMask);
+            procChainMask.AddModdedProc(LunarSunBombProc);
+
+            fireProjectileInfo.procChainMask = procChainMask;
+            return fireProjectileInfo;
         }
 
         private static void handleTransUpdate(CharacterBody body, ref float transformTimer, int stack, Xoroshiro128Plus transformRng)

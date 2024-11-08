@@ -28,8 +28,7 @@ namespace MegalomaniaPlugin
 {
     [BepInDependency(ItemAPI.PluginGUID)]
     [BepInDependency(RecalculateStatsAPI.PluginGUID)]
-
-    //https://risk-of-thunder.github.io/R2Wiki/Mod-Creation/Assets/Localization/
+    [BepInDependency(ProcTypeAPI.PluginGUID)]
     [BepInDependency(LanguageAPI.PluginGUID)]
 
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
@@ -39,7 +38,7 @@ namespace MegalomaniaPlugin
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "A5TR0spud";
         public const string PluginName = "Megalomania";
-        public const string PluginVersion = "1.2.1";
+        public const string PluginVersion = "1.3.0";
 
         public static AssetBundle megalomaniaAssetBundle;
         public static Sprite EgoPrimarySprite;
@@ -52,6 +51,8 @@ namespace MegalomaniaPlugin
         #region Constants and Configs
 
         public static ConfigEntry<bool> ConfigCompatibilityMode { get; set; }
+        //public static ConfigEntry<bool> ConfigLunarsOfExiguityIgnore { get; set; }
+        //public static ConfigEntry<bool> ConfigNoMoreLunarsIgnore { get; set; }
 
         #region defensive
         public static ConfigEntry<double> ConfigMaxHealthInitialStack { get; set; }
@@ -91,7 +92,7 @@ namespace MegalomaniaPlugin
         public static ConfigEntry<bool> ConfigBombStacking { get; set; }
         public static ConfigEntry<bool> ConfigPrimaryEnhancement { get; set; }
         public static ConfigEntry<bool> ConfigPassiveBombAttack { get; set; }
-        //public static ConfigEntry<bool> ConfigOnHitBombAttack { get; set; }
+        public static ConfigEntry<string> ConfigOnHitBombAttack { get; set; }
         #endregion
 
         #region bomb stats
@@ -174,6 +175,7 @@ namespace MegalomaniaPlugin
             InitItems();
             Utils.ParseRarityPriorityList();
             Utils.ParseConversionSelectionType();
+            Utils.ParseBombProcType();
             InitSkills();
             Utils.initSkillsList();
 
@@ -322,13 +324,21 @@ namespace MegalomaniaPlugin
         private void CreateConfig()
         {
             ConfigCompatibilityMode = Config.Bind("0. Main", "Compatibility Mode", false,
+               "Intended to be used when another Ego rework mod is installed.\n" +
                "If true, skips the hook to override Egocentrism in a couple of ways:\n" +
                "Disables all bomb stat and transformation over time changes.\n" +
                "Disables description override.\n" +
                "Other features that still work:\n" +
                "Stacking owner stats, such as health and movement speed.\n" +
-               "Transformation on stage start.\n" +
+               "Transformations on stage start.\n" +
                "Skill replacements.");
+
+            /*ConfigLunarsOfExiguityIgnore = Config.Bind("0. Main", "Lunars of Exiguity Exception", true,
+                "If true, Lunars of Exiguity no longer destroys additional stacks of Egocentrism. This may produce behavior unintended by either mod. Not recommended.\n" +
+                "If false and Lunars of Exiguity is installed, it's recommended to tone down transformations or buff the crap out of the stats.");
+            */
+            /*ConfigNoMoreLunarsIgnore = Config.Bind("0. Main", "No More Lunars Exception", true,
+                "If true, No More Lunars no longer removes Egocentrism from drop tables.");*/
 
             #region Stats
             // STATS
@@ -352,17 +362,21 @@ namespace MegalomaniaPlugin
                "Set cap to a negative value to disable the cap.");
             //Offense
             ConfigDamageInitialStack = Config.Bind("2. Stats - Offensive", "Initial Damage", 0.0,
-                "A percentage increase to damage on the initial stack.");
+                "A percentage increase to damage on the initial stack.\n" +
+                "0.02 = 2%");
             ConfigDamagePerStack = Config.Bind("2. Stats - Offensive", "Stacking Damage", 0.02,
-                "A percentage increase to damage per subsequent stack.");
+                "A percentage increase to damage per subsequent stack.\n" +
+                "0.02 = 2%");
 
             ConfigCritChanceInitialStack = Config.Bind("2. Stats - Offensive", "Initial Crit Chance", 0.01,
-                "A percentage increase to critical hit chance on the initial stack.");
+                "A percentage increase to critical hit chance on the initial stack.\n" +
+                "0.01 = 1%");
             ConfigCritChancePerStack = Config.Bind("2. Stats - Offensive", "Stacking Crit Chance", 0.01,
-                "A percentage increase to critical hit chance per subsequent stack.");
+                "A percentage increase to critical hit chance per subsequent stack.\n" +
+                "0.01 = 1%");
 
             ConfigAttackSpeedType = Config.Bind("2. Stats - Offensive", "Attack Speed Diminishing Returns", false,
-                "If true, attack speed will have dimishing returns, with the limit towards infinity approaching the bonus cap.\n" +
+                "If true, attack speed will have diminishing returns, with the limit towards infinity approaching the bonus cap.\n" +
                 "If false, attack speed will stack linearly and cap at the bonus cap.");
 
             ConfigAttackSpeedInitialStack = Config.Bind("2. Stats - Offensive", "Initial Attack Speed", 0.0,
@@ -375,7 +389,7 @@ namespace MegalomaniaPlugin
                 "In any mode, set cap to 0 to disable attack speed bonus entirely.");
             //Movement Speed
             ConfigMovementSpeedType = Config.Bind("3. Stats - Movement Speed", "Movement Speed Diminishing Returns", true,
-                "If true, movement speed will have dimishing returns, with the limit towards infinity approaching the bonus cap.\n" +
+                "If true, movement speed will have diminishing returns, with the limit towards infinity approaching the bonus cap.\n" +
                 "If false, movement speed will stack linearly and cap at the bonus cap.");
 
             ConfigMovementSpeedInitialStack = Config.Bind("3. Stats - Movement Speed", "Initial Movement Speed", 0.028,
@@ -399,10 +413,13 @@ namespace MegalomaniaPlugin
                 "If true, Egocentrism enhances your primary skill by firing Egocentrism bombs at enemies within 30 degrees of view.\n" +
                 "Comparable in activation to Shuriken.");
             ConfigPassiveBombAttack = Config.Bind("4. Bombs - Toggles", "Passive Bomb Attack", true,
-                "Whether the vanilla seeking behavior should apply. If a bomb collides with an enemy, it might still explode.");
-            /*ConfigOnHitBombAttack = Config.Bind("4. Bombs - Toggles", "On Hit: Bombs Attack", false,
-                "If true, then any damage done against an enemy will also target an Egocentrism bomb at that enemy.\n" +
-                "It doesn't care about proc coefficient (unless it's zero), but can't proc itself.");*/
+                "Whether the vanilla seeking behavior should apply. If a bomb collides with an enemy, it may still explode.");
+            ConfigOnHitBombAttack = Config.Bind("4. Bombs - Toggles", "On Hit: Bombs Attack", "none",
+                "If \"proc\", then any damage done against an enemy will have a 100% chance to also target an Egocentrism bomb at that enemy.\n" +
+                "It doesn't care about proc coefficient (unless it's zero), but can't proc itself.\n" +
+                "If \"create\", then any damage done has a 30% chance to create a bomb and then immediately target a bomb to the struck enemy.\n" +
+                "If \"none\", it will behave as usual (doing nothing special).\n" +
+                "If anything else, it'll log a warning and default to none.");
             //Stats
             ConfigBombCreationRate = Config.Bind("5. Bombs - Stats", "Initial Bomb Creation Rate", 3.0,
                 "How many seconds it takes to generate a bomb at stack size 1.");

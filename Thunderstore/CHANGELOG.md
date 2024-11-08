@@ -1,4 +1,10 @@
 
+## 1.3.0
+
+- Added On Hit Bomb Attack config option
+- Checked the spelling of config titles and descriptions
+- Fixed language override not working?
+
 ## 1.2.1 - *SotS 1.3.5 Fix*
 
 - Fixed language override not working

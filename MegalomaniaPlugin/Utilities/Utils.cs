@@ -31,6 +31,9 @@ namespace MegalomaniaPlugin.Utilities
         //Items to convert to
         public static Dictionary<ItemIndex, int> parsedItemConvertToList;
 
+        //What to do when an enemy is attacked (bombs proc)
+        public static OnHitBombAttackType parsedOnHitBombAttackType;
+
         //Thank you ConfigEgocentrism by Judgy53 for code reference:
         //https://github.com/Judgy53/ConfigEgocentrism/blob/main/ConfigEgocentrism/ConfigEgocentrismPlugin.cs
         public enum ItemTierLookup
@@ -63,10 +66,17 @@ namespace MegalomaniaPlugin.Utilities
             voidboss = ItemTier.VoidBoss
         }
 
-        public enum ConversionSelectionType
+        public enum ConversionSelectionType : uint
         {
-            weighted = 0,
-            priority = 1
+            weighted,
+            priority
+        }
+
+        public enum OnHitBombAttackType : uint
+        {
+            none,
+            proc,
+            create
         }
 
         private static Dictionary<string, SkillDef> SkillLookup { get; set; }
@@ -368,6 +378,20 @@ namespace MegalomaniaPlugin.Utilities
             else
                 //uncapped linear
                 return perStack * stacksize;
+        }
+
+        public static void ParseBombProcType()
+        {
+            string toTest = MegalomaniaPlugin.ConfigOnHitBombAttack.Value.Trim().ToLower();
+            if (Enum.TryParse(toTest, out OnHitBombAttackType bombType))
+            {
+                parsedOnHitBombAttackType = bombType;
+                return;
+            }
+
+            Log.Warning($"Invalid on hit bomb attack type: `{toTest}`. Defaulting to none.");
+            parsedOnHitBombAttackType = OnHitBombAttackType.none;
+            return;
         }
 
         public static void ParseItemConvertToList()
