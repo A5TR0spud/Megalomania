@@ -101,13 +101,13 @@ namespace MegalomaniaPlugin.Utilities
             initMove = MegalomaniaPlugin.ConfigMovementSpeedInitialStack.Value * 100;
             moveSpeed = MegalomaniaPlugin.ConfigMovementSpeedPerStack.Value * 100;
 
-            primaryReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigPrimarySkill.Value.Trim().ToLower()).skillNameToken;
+            primaryReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigPrimarySkill.Value).skillNameToken;
             doReplacePrimary = MegalomaniaPlugin.ConfigPrimaryReplacement.Value && !primaryReplacementID.IsNullOrWhiteSpace();
-            secondaryReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigSecondarySkill.Value.Trim().ToLower()).skillNameToken;
+            secondaryReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigSecondarySkill.Value).skillNameToken;
             doReplaceSecondary = MegalomaniaPlugin.ConfigSecondaryReplacement.Value && !secondaryReplacementID.IsNullOrWhiteSpace();
-            utilityReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigUtilitySkill.Value.Trim().ToLower()).skillNameToken;
+            utilityReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigUtilitySkill.Value).skillNameToken;
             doReplaceUtility = MegalomaniaPlugin.ConfigUtilityReplacement.Value && !utilityReplacementID.IsNullOrWhiteSpace();
-            specialReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigSpecialSkill.Value.Trim().ToLower()).skillNameToken;
+            specialReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigSpecialSkill.Value).skillNameToken;
             doReplaceSpecial = MegalomaniaPlugin.ConfigSpecialReplacement.Value && !specialReplacementID.IsNullOrWhiteSpace();
 
             skillReplacementCount = 0;
@@ -214,7 +214,7 @@ namespace MegalomaniaPlugin.Utilities
                 }
 
                 string selection = "random";
-                switch (Utils.parsedConversionSelectionType)
+                switch (MegalomaniaPlugin.ConfigConversionSelectionType.Value)
                 {
                     case Utils.ConversionSelectionType.weighted:
                         selection = "weighted";

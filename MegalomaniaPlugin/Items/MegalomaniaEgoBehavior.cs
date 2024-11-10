@@ -6,11 +6,13 @@ using System.Text;
 using UnityEngine;
 using R2API.Utils;
 using System.Linq;
-using System.Numerics;
 using MegalomaniaPlugin.Utilities;
 using R2API;
 using UnityEngine.Networking;
 using System.Collections;
+using Quaternion = UnityEngine.Quaternion;
+using Vector3 = UnityEngine.Vector3;
+using Random = UnityEngine.Random;
 
 namespace MegalomaniaPlugin.Items
 {
@@ -19,9 +21,43 @@ namespace MegalomaniaPlugin.Items
         private readonly BullseyeSearch search = new BullseyeSearch();
         public static ModdedProcType LunarSunBombProc = ProcTypeAPI.ReserveProcType();
         private static GameObject projectilePrefab;
+        private static float baseOrbitRadius = 2f;
+        private static float orbitRadiusPerStack = 0.25f;
+        private static float maxInclinationDegrees = 0f;
+        private static bool limitSpeedReduction = false;
+        private static bool preferOuter = false;
+        private static bool inclinationScalesWithDistance = false;
+        private static bool capRadius = false;
+        private static float capRadiusValue = 0f;
 
         public void init()
         {
+            if (MegalomaniaPlugin.ConfigBombFocused.Value != Utils.BombDensity.normal)
+            {
+                if (MegalomaniaPlugin.ConfigBombFocused.Value == Utils.BombDensity.oort_cloud)
+                {
+                    baseOrbitRadius = 2.5f;
+                    orbitRadiusPerStack = 0.3f;
+                    maxInclinationDegrees = 90f;
+                    limitSpeedReduction = true;
+                    preferOuter = true;
+                    capRadius = true;
+                    capRadiusValue = 30f;
+                }
+                else if (MegalomaniaPlugin.ConfigBombFocused.Value == Utils.BombDensity.asteroid_belt)
+                {
+                    baseOrbitRadius = 1.9f;
+                    orbitRadiusPerStack = 0.1f;
+                    maxInclinationDegrees = 15f;
+                    inclinationScalesWithDistance = true;
+                    capRadius = true;
+                    capRadiusValue = 5f;
+                }
+
+                On.RoR2.LunarSunBehavior.InitializeOrbiter += LunarSunBehavior_InitializeOrbiter;
+            }
+                
+            
             On.RoR2.LunarSunBehavior.FixedUpdate += LunarSunBehavior_FixedUpdate;
             On.RoR2.LunarSunBehavior.GetMaxProjectiles += LunarSunBehavior_GetMaxProjectiles;
 
@@ -34,85 +70,168 @@ namespace MegalomaniaPlugin.Items
             On.RoR2.GlobalEventManager.ProcessHitEnemy += GlobalEventManager_ProcessHitEnemy;
         }
 
+        private void LunarSunBehavior_InitializeOrbiter(On.RoR2.LunarSunBehavior.orig_InitializeOrbiter orig, LunarSunBehavior self, ProjectileOwnerOrbiter orbiter, LunarSunProjectileController controller)
+        {
+            float ttrpg = orbitRadiusPerStack * (float)self.stack;
+            if (capRadius)
+            {
+                float t = capRadiusValue - baseOrbitRadius;
+                ttrpg = Mathf.Min(ttrpg, t);
+            }
+            float stackingBonusRandomOrbitAdder = Random.Range(orbitRadiusPerStack, ttrpg);
+            if (preferOuter) //roll with advantage
+            {
+                float other = Random.Range(orbitRadiusPerStack, ttrpg);
+                if (other > stackingBonusRandomOrbitAdder) stackingBonusRandomOrbitAdder = other;
+            }
+            float orbitRadius = self.body.radius + baseOrbitRadius + stackingBonusRandomOrbitAdder;
+
+            float num2 = 0;
+            if (limitSpeedReduction)
+            {
+                num2 = orbitRadius;
+            }
+            else
+            {
+                num2 = orbitRadius / 2f;
+                num2 *= num2;
+            }
+            float distanceScalar = Mathf.Pow(0.9f, num2);
+            float maxIncline = maxInclinationDegrees;
+            if (inclinationScalesWithDistance)
+            {
+                maxIncline *= 1f - distanceScalar;
+            }
+            float degreesPerSecond = 180f * distanceScalar;
+            Vector3 inclinationVector = Quaternion.AngleAxis(Random.Range(0f, maxIncline), Vector3.forward) * Vector3.up;
+            Vector3 rotatedIncVec = Quaternion.AngleAxis(Random.Range(0f, 360f), Vector3.up) * inclinationVector;
+            //It seems like planeNormal is always changed to be on only 1 axis. This sucks, and I hate it.
+            //I've tried several methods of finding a planeNormal but none actually rotate it properly.
+            //If I want this fixed, I'd have to hook into ProjectileOwnerOrbity, which uses networking. I hate networking.
+            //So, for now, it will remain borked but passable.
+            Vector3 planeNormal = rotatedIncVec;
+            float initialDegreesFromOwnerForward = Random.Range(0f, 360f);
+            orbiter.Initialize(planeNormal, orbitRadius, degreesPerSecond, initialDegreesFromOwnerForward);
+            self.onDisabled += DestroyOrbiter;
+            void DestroyOrbiter(LunarSunBehavior lunarSunBehavior)
+            {
+                if ((bool)controller)
+                {
+                    controller.Detonate();
+                }
+            }
+        }
+
         private void GlobalEventManager_ProcessHitEnemy(On.RoR2.GlobalEventManager.orig_ProcessHitEnemy orig, GlobalEventManager self, DamageInfo damageInfo, GameObject victim)
         {
             orig(self, damageInfo, victim);
 
             //copied from base
-            if (damageInfo.procCoefficient == 0f || damageInfo.rejected || !NetworkServer.active)
+            /*if (damageInfo.procCoefficient == 0f || damageInfo.rejected || !NetworkServer.active)
             {
                 return;
             }
             if (!damageInfo.attacker || !(damageInfo.procCoefficient > 0f))
             {
                 return;
-            }
+            }*/
+
+            bool doTheRoar = true;
 
             ProcChainMask procChainMask = damageInfo.procChainMask;
 
             //further tests for on hit bomb attack
-            if (Utils.parsedOnHitBombAttackType == Utils.OnHitBombAttackType.none
+            //this is such bad... this is not good code
+            if (MegalomaniaPlugin.ConfigOnHitBombAttack.Value == Utils.OnHitBombAttackType.none
                 || procChainMask.HasModdedProc(LunarSunBombProc))
-                return;
+                doTheRoar = false;
             CharacterBody attacker = damageInfo.attacker.GetComponent<CharacterBody>();
             if (!(bool)attacker)
-                return;
+                doTheRoar = false;
             CharacterMaster master = attacker.master;
             if (!(bool)master)
-                return;
+                doTheRoar = false;
             Inventory inventory = attacker.inventory;
             if (!(bool)inventory)
                 inventory = master.inventory;
             if (!(bool)inventory)
-                return;
+                doTheRoar = false;
             int egoCount = inventory.GetItemCount(DLC1Content.Items.LunarSun);
             if (egoCount < 1)
-                return;
+                doTheRoar = false;
 
-            HurtBox target = victim.GetComponent<HurtBox>();
-            CharacterBody victimBody = victim.GetComponent<CharacterBody>();
-            if (!(bool)target && (bool)victimBody)
+            CharacterBody victimBody = (victim ? victim.GetComponent<CharacterBody>() : null);
+            HurtBox target = null;
+            if (victimBody != null && (bool)victimBody)
                 target = victimBody.mainHurtBox;
-            if (!(bool)target)
-                return;
+            if (target == null || !(bool)target)
+                doTheRoar = false;
 
-            bool doTarget = false;
             //letsago
-            if (Utils.parsedOnHitBombAttackType == Utils.OnHitBombAttackType.proc
-                && Util.CheckRoll(100f * damageInfo.procCoefficient, master.luck, master))
+            if (doTheRoar)
             {
-                procChainMask.AddModdedProc(LunarSunBombProc);
-                doTarget = true;
-            }
-            else if (Utils.parsedOnHitBombAttackType == Utils.OnHitBombAttackType.create
-                && Util.CheckRoll(30f * damageInfo.procCoefficient, master.luck, master))
-            {
-                procChainMask.AddModdedProc(LunarSunBombProc);
-                FireProjectileInfo bombInfo = createBombInfo(attacker, egoCount);
-                bombInfo.procChainMask = procChainMask;
-                ProjectileManager.instance.FireProjectile(bombInfo);
-
-                doTarget = true;
-            }
-
-            if (doTarget)
-            {
-                List<DeployableInfo> list = attacker.master.deployablesList;
-                foreach (DeployableInfo info in list)
+                bool doTarget = false;
+                if (MegalomaniaPlugin.ConfigOnHitBombAttack.Value == Utils.OnHitBombAttackType.proc
+                    && Util.CheckRoll(100f * damageInfo.procCoefficient, master.luck, master))
                 {
-                    if (info.slot == DeployableSlot.LunarSunBomb)
+                    procChainMask.AddModdedProc(LunarSunBombProc);
+                    doTarget = true;
+                }
+                else if (MegalomaniaPlugin.ConfigOnHitBombAttack.Value == Utils.OnHitBombAttackType.create
+                    && Util.CheckRoll(30f * damageInfo.procCoefficient, master.luck, master))
+                {
+                    procChainMask.AddModdedProc(LunarSunBombProc);
+                    if (!master.IsDeployableLimited(DeployableSlot.LunarSunBomb))
                     {
-                        ProjectileSphereTargetFinder targetFinder = info.deployable.gameObject.GetComponent<ProjectileSphereTargetFinder>();
-                        if (!(bool)targetFinder)
-                            continue;
-                        if (targetFinder.hasTarget)
-                            continue;
+                        FireProjectileInfo bombInfo = createBombInfo(attacker, egoCount);
+                        bombInfo.procChainMask = procChainMask;
+                        setupBombGen(egoCount, false);
+                        ProjectileManager.instance.FireProjectile(bombInfo);
+                    }
+                    doTarget = true;
+                }
 
-                        targetFinder.SetTarget(target);
-                        break;
+                if (doTarget)
+                {
+                    List<DeployableInfo> list = attacker.master.deployablesList;
+                    foreach (DeployableInfo info in list)
+                    {
+                        if (info.slot == DeployableSlot.LunarSunBomb)
+                        {
+                            ProjectileSphereTargetFinder targetFinder = info.deployable.gameObject.GetComponent<ProjectileSphereTargetFinder>();
+                            if (!(bool)targetFinder)
+                                continue;
+                            if (targetFinder.hasTarget)
+                                continue;
+
+                            targetFinder.SetTarget(target);
+                            targetFinder.onlySearchIfNoTarget = true;
+                            targetFinder.testLoS = false;
+                            break;
+                        }
                     }
                 }
             }
+        }
+
+        private static void setupBombGen(int stack, bool isFromTime)
+        {
+            ProjectileSphereTargetFinder targetFinder = projectilePrefab.GetComponent<ProjectileSphereTargetFinder>();
+            if (targetFinder)
+            {
+                targetFinder.lookRange = (float)(MegalomaniaPlugin.ConfigBombRange.Value + MegalomaniaPlugin.ConfigBombStackingRange.Value * (stack - 1));
+                
+                if (!MegalomaniaPlugin.ConfigPassiveBombAttack.Value)
+                {
+                    //passive attack is disabled...
+                    if (isFromTime)
+                    {
+                        targetFinder.lookRange = 0.0f; //only check no radius
+                    }
+                }
+            }
+            else
+                Log.Error("LunarSunBehavior: Unable to modify projectile Range (ProjectileSphereTargetFinder component not found)");
         }
 
         private void LunarSunBehavior_OnEnable(On.RoR2.LunarSunBehavior.orig_OnEnable orig, LunarSunBehavior self)
@@ -226,16 +345,7 @@ namespace MegalomaniaPlugin.Items
             {
                 projectileTimer = 0f;
 
-                ProjectileSphereTargetFinder targetFinder = projectilePrefab.GetComponent<ProjectileSphereTargetFinder>();
-                if (targetFinder)
-                {
-                    if (MegalomaniaPlugin.ConfigPassiveBombAttack.Value)
-                        targetFinder.lookRange = (float)(MegalomaniaPlugin.ConfigBombRange.Value + MegalomaniaPlugin.ConfigBombStackingRange.Value * (stack - 1));
-                    else
-                        targetFinder.lookRange = 0;
-                }
-                else
-                    Log.Error("LunarSunBehavior: Unable to modify projectile Range (ProjectileSphereTargetFinder component not found)");
+                setupBombGen(stack, true);
 
                 FireProjectileInfo bombInfo = createBombInfo(body, stack);
                 ProjectileManager.instance.FireProjectile(bombInfo);

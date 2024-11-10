@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
+using static MegalomaniaPlugin.Utilities.Utils;
 
 //MIT License
 
@@ -92,7 +93,8 @@ namespace MegalomaniaPlugin
         public static ConfigEntry<bool> ConfigBombStacking { get; set; }
         public static ConfigEntry<bool> ConfigPrimaryEnhancement { get; set; }
         public static ConfigEntry<bool> ConfigPassiveBombAttack { get; set; }
-        public static ConfigEntry<string> ConfigOnHitBombAttack { get; set; }
+        public static ConfigEntry<Utils.OnHitBombAttackType> ConfigOnHitBombAttack { get; set; }
+        public static ConfigEntry<BombDensity> ConfigBombFocused { get; set; }
         #endregion
 
         #region bomb stats
@@ -124,7 +126,7 @@ namespace MegalomaniaPlugin
         public static ConfigEntry<bool> ConfigStackSizeMatters {  get; set; }
         public static ConfigEntry<double> ConfigStackSizeMultiplier { get; set; }
         public static ConfigEntry<double> ConfigStackSizeAdder { get; set; }
-        public static ConfigEntry<string> ConfigConversionSelectionType { get; set; }
+        public static ConfigEntry<ConversionSelectionType> ConfigConversionSelectionType { get; set; }
         public static ConfigEntry<string> ConfigItemsToConvertTo { get; set; }
         public static ConfigEntry<string> ConfigRarityPriorityList { get; set; }
         public static ConfigEntry<string> ConfigItemPriorityList { get; set; }
@@ -134,19 +136,19 @@ namespace MegalomaniaPlugin
         #region skills
         public static ConfigEntry<string> ConfigSkillsInfo { get; set; }
 
-        public static ConfigEntry<string> ConfigPrimarySkill {  get; set; }
+        public static ConfigEntry<SkillEnum> ConfigPrimarySkill {  get; set; }
         public static ConfigEntry<bool> ConfigPrimaryReplacement { get; set; }
         public static ConfigEntry<bool> ConfigCorruptVisions { get; set; }
 
-        public static ConfigEntry<string> ConfigSecondarySkill { get; set; }
+        public static ConfigEntry<SkillEnum> ConfigSecondarySkill { get; set; }
         public static ConfigEntry<bool> ConfigSecondaryReplacement { get; set; }
         public static ConfigEntry<bool> ConfigCorruptHooks { get; set; }
 
-        public static ConfigEntry<string> ConfigUtilitySkill { get; set; }
+        public static ConfigEntry<SkillEnum> ConfigUtilitySkill { get; set; }
         public static ConfigEntry<bool> ConfigUtilityReplacement { get; set; }
         public static ConfigEntry<bool> ConfigCorruptStrides { get; set; }
 
-        public static ConfigEntry<string> ConfigSpecialSkill { get; set; }
+        public static ConfigEntry<SkillEnum> ConfigSpecialSkill { get; set; }
         public static ConfigEntry<bool> ConfigSpecialReplacement { get; set; }
         public static ConfigEntry<bool> ConfigCorruptEssence { get; set; }
         #endregion
@@ -174,8 +176,6 @@ namespace MegalomaniaPlugin
             InitBuffs();
             InitItems();
             Utils.ParseRarityPriorityList();
-            Utils.ParseConversionSelectionType();
-            Utils.ParseBombProcType();
             InitSkills();
             Utils.initSkillsList();
 
@@ -414,11 +414,14 @@ namespace MegalomaniaPlugin
                 "Comparable in activation to Shuriken.");
             ConfigPassiveBombAttack = Config.Bind("4. Bombs - Toggles", "Passive Bomb Attack", true,
                 "Whether the vanilla seeking behavior should apply. If a bomb collides with an enemy, it may still explode.");
-            ConfigOnHitBombAttack = Config.Bind("4. Bombs - Toggles", "On Hit: Bombs Attack", "none",
+            ConfigOnHitBombAttack = Config.Bind("4. Bombs - Toggles", "On Hit: Bombs Attack", Utils.OnHitBombAttackType.none,
                 "If \"proc\", then any damage done against an enemy will have a 100% chance to also target an Egocentrism bomb at that enemy.\n" +
-                "If \"create\", then any damage done has a 30% chance to create a bomb and then immediately target a bomb to the struck enemy.\n" +
-                "If \"none\", it will behave as usual (doing nothing special).\n" +
-                "If anything else, it'll log a warning and default to none.");
+                "If \"create\", then any damage done has a 30% chance to create a bomb and then immediately attempt to target a bomb to the struck enemy.\n" +
+                "If \"none\", it will behave as usual (doing nothing special).");
+            ConfigBombFocused = Config.Bind("4. Bombs - Toggles", "Bomb Density", BombDensity.asteroid_belt,
+                "If \"normal\", bombs will orbit with vanilla density.\n" +
+                "If \"oort_cloud\", bombs will be further spread out vertically.\n" +
+                "If \"asteroid_belt\", bombs will remain close to the owner.");
             //Stats
             ConfigBombCreationRate = Config.Bind("5. Bombs - Stats", "Initial Bomb Creation Rate", 3.0,
                 "How many seconds it takes to generate a bomb at stack size 1.");
@@ -498,13 +501,13 @@ namespace MegalomaniaPlugin
                 "Eg: A weighted item at 10 and an adder of 5 would stack 10 -> 15 -> 20 -> 25\n" +
                 "Eg: A weighted item at 50 and an adder of 0.5 would stack 50 -> 50 (50.5) -> 51 -> 51 (51.5)");
 
-            ConfigConversionSelectionType = Config.Bind("6. Transform - Rules", "Conversion Selection Type", "Weighted",
-                "Determines method for choosing items. Case insensitive. Allowed values:\n" +
-                "Weighted: tends towards higher weighted items and tiers but maintains randomness.\n" +
-                "Priority: always chooses the highest priority item available. If there's a tie, selects one at random.");
+            ConfigConversionSelectionType = Config.Bind("6. Transform - Rules", "Conversion Selection Type", Utils.ConversionSelectionType.weighted,
+                "Determines method for choosing items. Case sensitive. Allowed values:\n" +
+                "weighted: tends towards higher weighted items and tiers but maintains randomness.\n" +
+                "priority: always chooses the highest priority item available. If there's a tie, selects one at random.");
 
             ConfigItemsToConvertTo = Config.Bind("6. Transform - Rules", "Items To Convert To",
-                "LunarSun:1",
+                "LunarSun:1, ",
                 "A list of item that Egocentrism can convert other items into. Items cannot be converted into themselves.\n" +
                 "If this is empty, conversion is disabled completely.\n" +
                 "If an item does not make an appearance in this list or has a value of 0, that item cannot be converted into.\n" +
@@ -522,8 +525,8 @@ namespace MegalomaniaPlugin
                 "Format: tier1:integer, tier2:int, tier3:i, etc\n" +
                 "Case insensitive, mostly whitespace insensitive.\n" +
                 "Valid Tiers:\n" +
-                "white,green,red,blue,yellow,voidwhite,voidgreen,voidred,voidyellow,\n" +
-                "common,uncommon,legendary,lunar,boss,voidcommon,voiduncommon,voidlegendary,voidboss");
+                "white, green, red, blue, yellow, voidwhite, voidgreen, voidred, voidyellow, \n" +
+                "common, uncommon, legendary, lunar, boss, voidcommon, voiduncommon, voidlegendary, voidboss");
 
             ConfigItemPriorityList = Config.Bind("6. Transform - Rules", "Item:Priority List",
                 "BeetleGland:5, GhostOnKill:5, MinorConstructOnKill:5, RoboBallBuddy:10, ScrapGreen:30, ScrapWhite:10, ScrapYellow:60, ScrapRed:20, RegeneratingScrap:-20, ExtraStatsOnLevelUp:15, FreeChest:-20, ExtraShrineItem:10, CloverVoid:15, LowerPricedChests:-20, ResetChests:-5",
@@ -555,7 +558,7 @@ namespace MegalomaniaPlugin
 
             string allowedSkillValues = "conceit, minigun, bomb, twinshot, shell, monopolize";
 
-            ConfigPrimarySkill = Config.Bind("7.1 Skills - Primary", "Skill to Use", "conceit",
+            ConfigPrimarySkill = Config.Bind("7.1 Skills - Primary", "Skill to Use", SkillEnum.conceit,
                 "What skill to replace primary with.\n" +
                 $"Allowed values: {allowedSkillValues}");
             ConfigPrimaryReplacement = Config.Bind("7.1 Skills - Primary", "Enable Primary Replacement", true,
@@ -564,7 +567,7 @@ namespace MegalomaniaPlugin
                 "If true, Visions of Heresy is corrupted into Egocentrism when replacement is enabled.\n" +
                 "If false, Visions of Heresy's \"Hungering Gaze\" skill overrides Ego skill replacement.");
 
-            ConfigSecondarySkill = Config.Bind("7.2 Skills - Secondary", "Skill to Use", "bomb",
+            ConfigSecondarySkill = Config.Bind("7.2 Skills - Secondary", "Skill to Use", SkillEnum.bomb,
                 "What skill to replace secondary with.\n" +
                 $"Allowed values: {allowedSkillValues}");
             ConfigSecondaryReplacement = Config.Bind("7.2 Skills - Secondary", "Enable Secondary Replacement", false,
@@ -573,7 +576,7 @@ namespace MegalomaniaPlugin
                 "If true, Hooks of Heresy is corrupted into Egocentrism when replacement is enabled.\n" +
                 "If false, Hooks of Heresy's \"Slicing Maelstrom\" skill overrides Ego skill replacement.");
 
-            ConfigUtilitySkill = Config.Bind("7.3 Skills - Utility", "Skill to Use", "shell",
+            ConfigUtilitySkill = Config.Bind("7.3 Skills - Utility", "Skill to Use", SkillEnum.shell,
                 "What skill to replace utility with.\n" +
                 $"Allowed values: {allowedSkillValues}");
             ConfigUtilityReplacement = Config.Bind("7.3 Skills - Utility", "Enable Utility Replacement", false,
@@ -582,7 +585,7 @@ namespace MegalomaniaPlugin
                 "If true, Strides of Heresy is corrupted into Egocentrism when replacement is enabled.\n" +
                 "If false, Strides of Heresy's \"Shadowfade\" skill overrides Ego skill replacement.");
 
-            ConfigSpecialSkill = Config.Bind("7.4 Skills - Special", "Skill to Use", "monopolize",
+            ConfigSpecialSkill = Config.Bind("7.4 Skills - Special", "Skill to Use", SkillEnum.monopolize,
                 "What skill to replace special with.\n" +
                 $"Allowed values: {allowedSkillValues}");
             ConfigSpecialReplacement = Config.Bind("7.4 Skills - Special", "Enable Special Replacement", false,

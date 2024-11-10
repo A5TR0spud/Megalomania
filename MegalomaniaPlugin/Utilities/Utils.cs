@@ -25,14 +25,8 @@ namespace MegalomaniaPlugin.Utilities
         //Parsed Item:Priority List
         public static Dictionary<ItemIndex, int> parsedItemPriorityList;
 
-        //Selection mode
-        public static ConversionSelectionType parsedConversionSelectionType;
-
         //Items to convert to
         public static Dictionary<ItemIndex, int> parsedItemConvertToList;
-
-        //What to do when an enemy is attacked (bombs proc)
-        public static OnHitBombAttackType parsedOnHitBombAttackType;
 
         //Thank you ConfigEgocentrism by Judgy53 for code reference:
         //https://github.com/Judgy53/ConfigEgocentrism/blob/main/ConfigEgocentrism/ConfigEgocentrismPlugin.cs
@@ -79,29 +73,44 @@ namespace MegalomaniaPlugin.Utilities
             create
         }
 
-        private static Dictionary<string, SkillDef> SkillLookup { get; set; }
+        public enum SkillEnum : uint
+        {
+            conceit,
+            monopolize,
+            bomb,
+            twinshot,
+            shell,
+            minigun
+        }
+
+        public enum BombDensity : uint
+        {
+            normal,
+            oort_cloud,
+            asteroid_belt
+        }
+
+        private static Dictionary<SkillEnum, SkillDef> SkillLookup { get; set; }
 
         public static void initSkillsList()
         {
-            SkillLookup = new Dictionary<string, SkillDef>();
-            SkillLookup.Add("conceit", ConceitAbility.ConceitSkill);
-            SkillLookup.Add("monopolize", MonopolizeAbility.MonopolizeSkill);
-            SkillLookup.Add("bomb", BombAbility.BombSkill);
-            SkillLookup.Add("twinshot", TwinShotAbility.TwinShotSkill);
-            SkillLookup.Add("shell", ShellAbility.ShellSkill);
-            SkillLookup.Add("minigun", FireMinigun.MinigunSkill);
+            SkillLookup = new Dictionary<SkillEnum, SkillDef>();
+            SkillLookup.Add(SkillEnum.conceit, ConceitAbility.ConceitSkill);
+            SkillLookup.Add(SkillEnum.monopolize, MonopolizeAbility.MonopolizeSkill);
+            SkillLookup.Add(SkillEnum.bomb, BombAbility.BombSkill);
+            SkillLookup.Add(SkillEnum.twinshot, TwinShotAbility.TwinShotSkill);
+            SkillLookup.Add(SkillEnum.shell, ShellAbility.ShellSkill);
+            SkillLookup.Add(SkillEnum.minigun, FireMinigun.MinigunSkill);
         }
 
-#nullable enable
-        public static SkillDef? lookupSkill(string str)
+        public static SkillDef lookupSkill(SkillEnum toGetDef)
         {
-            if (SkillLookup.TryGetValue(str.ToLower().Trim(), out SkillDef sdef))
+            if (SkillLookup.TryGetValue(toGetDef, out SkillDef sdef))
             {
                 return sdef;
             }
             return null;
         }
-#nullable restore
 
         public static void CorruptItem(Inventory inventory, ItemIndex toCorrupt, CharacterMaster master)
         {
@@ -155,20 +164,21 @@ namespace MegalomaniaPlugin.Utilities
                 //shuffle
                 ItemIndex toTransform = ItemIndex.None;
                 //modality select item to transform
-                switch (parsedConversionSelectionType)
+                switch (MegalomaniaPlugin.ConfigConversionSelectionType.Value)
                 {
-                    case ConversionSelectionType.weighted:
-                        toTransform = getWeightedDictKey(weightedInventory, transformRng);
-                        break;
+                    
                     case ConversionSelectionType.priority:
                         toTransform = getPriorityDictKey(weightedInventory, transformRng);
+                        break;
+                    default: //case ConversionSelectionType.weighted:
+                        toTransform = getWeightedDictKey(weightedInventory, transformRng);
                         break;
                 }
 
                 if (toTransform == ItemIndex.None)
                 {
                     Log.Error("Egocentrism tried to convert an item but something went wrong. Did you forget to add an enum or function?\n" +
-                        $"parsedConversionSelectionType: '{parsedConversionSelectionType}'");
+                        $"parsedConversionSelectionType: '{MegalomaniaPlugin.ConfigConversionSelectionType.Value}'");
                     return toReturn;
                 }
 
@@ -380,20 +390,6 @@ namespace MegalomaniaPlugin.Utilities
                 return perStack * stacksize;
         }
 
-        public static void ParseBombProcType()
-        {
-            string toTest = MegalomaniaPlugin.ConfigOnHitBombAttack.Value.Trim().ToLower();
-            if (Enum.TryParse(toTest, out OnHitBombAttackType bombType))
-            {
-                parsedOnHitBombAttackType = bombType;
-                return;
-            }
-
-            Log.Warning($"Invalid on hit bomb attack type: `{toTest}`. Defaulting to none.");
-            parsedOnHitBombAttackType = OnHitBombAttackType.none;
-            return;
-        }
-
         public static void ParseItemConvertToList()
         {
             parsedItemConvertToList = new Dictionary<ItemIndex, int>();
@@ -440,20 +436,6 @@ namespace MegalomaniaPlugin.Utilities
                 parsedItemConvertToList.Add(index, priority);
                 Log.Info($"(ConvertTo) Item:Priority added! `{iP}`");
             }
-        }
-
-        public static void ParseConversionSelectionType()
-        {
-            string toTest = MegalomaniaPlugin.ConfigConversionSelectionType.Value.Trim().ToLower();
-            if (Enum.TryParse(toTest, out ConversionSelectionType conversionType))
-            {
-                parsedConversionSelectionType = conversionType;
-                return;
-            }
-
-            Log.Warning($"Invalid conversion selection type: `{toTest}`. Defaulting to weighted.");
-            parsedConversionSelectionType = ConversionSelectionType.weighted;
-            return;
         }
 
         public static void ParseRarityPriorityList()
