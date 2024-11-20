@@ -101,13 +101,13 @@ namespace MegalomaniaPlugin.Utilities
             initMove = MegalomaniaPlugin.ConfigMovementSpeedInitialStack.Value * 100;
             moveSpeed = MegalomaniaPlugin.ConfigMovementSpeedPerStack.Value * 100;
 
-            primaryReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigPrimarySkill.Value.Trim().ToLower()).skillNameToken;
+            primaryReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigPrimarySkill.Value).skillNameToken;
             doReplacePrimary = MegalomaniaPlugin.ConfigPrimaryReplacement.Value && !primaryReplacementID.IsNullOrWhiteSpace();
-            secondaryReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigSecondarySkill.Value.Trim().ToLower()).skillNameToken;
+            secondaryReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigSecondarySkill.Value).skillNameToken;
             doReplaceSecondary = MegalomaniaPlugin.ConfigSecondaryReplacement.Value && !secondaryReplacementID.IsNullOrWhiteSpace();
-            utilityReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigUtilitySkill.Value.Trim().ToLower()).skillNameToken;
+            utilityReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigUtilitySkill.Value).skillNameToken;
             doReplaceUtility = MegalomaniaPlugin.ConfigUtilityReplacement.Value && !utilityReplacementID.IsNullOrWhiteSpace();
-            specialReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigSpecialSkill.Value.Trim().ToLower()).skillNameToken;
+            specialReplacementID = Utils.lookupSkill(MegalomaniaPlugin.ConfigSpecialSkill.Value).skillNameToken;
             doReplaceSpecial = MegalomaniaPlugin.ConfigSpecialReplacement.Value && !specialReplacementID.IsNullOrWhiteSpace();
 
             skillReplacementCount = 0;
@@ -214,7 +214,7 @@ namespace MegalomaniaPlugin.Utilities
                 }
 
                 string selection = "random";
-                switch (Utils.parsedConversionSelectionType)
+                switch (MegalomaniaPlugin.ConfigConversionSelectionType.Value)
                 {
                     case Utils.ConversionSelectionType.weighted:
                         selection = "weighted";
@@ -333,7 +333,7 @@ namespace MegalomaniaPlugin.Utilities
 
             //"ITEM_LUNARSUN_PICKUP": "Gain multiple orbiting bombs. <color=#FF7F7F>Every minute, assimilate another item into Egocentrism.</color>",
             //"ITEM_LUNARSUN_DESC": "Every <style=cIsUtility>3</style><style=cStack>(-50% per stack)</style> seconds, gain an <style=cIsDamage>orbiting bomb</style> that detonates on impact for <style=cIsDamage>360%</style> damage, up to a maximum of <style=cIsUtility>3<style=cStack>(+1 per stack)</style> bombs</style>. Every <style=cIsUtility>60</style> seconds, a random item is <style=cIsUtility>converted</style> into this item.",
-            LanguageAPI.Add("ITEM_LUNARSUN_DESC",
+            LanguageAPI.AddOverlay("ITEM_LUNARSUN_DESC",
                 bombGenString + transformTimeString + transformStageString + statsString + skillsReplacementString,
             "en");
 
@@ -411,7 +411,7 @@ namespace MegalomaniaPlugin.Utilities
                 pickup_transformStageString = "<color=#FF7F7F>On the start of each stage, assimilate more items into Egocentrism.</color>";
             }
 
-            LanguageAPI.Add("ITEM_LUNARSUN_PICKUP",
+            LanguageAPI.AddOverlay("ITEM_LUNARSUN_PICKUP",
                 pickup_bombGenString + pickup_skillsString + pickup_statsString + pickup_transformTimeString + pickup_transformStageString,
             "en");
         }

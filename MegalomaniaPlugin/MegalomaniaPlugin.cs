@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
+using static MegalomaniaPlugin.Utilities.Utils;
 
 //MIT License
 
@@ -28,9 +29,9 @@ namespace MegalomaniaPlugin
 {
     [BepInDependency(ItemAPI.PluginGUID)]
     [BepInDependency(RecalculateStatsAPI.PluginGUID)]
-
-    //https://risk-of-thunder.github.io/R2Wiki/Mod-Creation/Assets/Localization/
+    [BepInDependency(ProcTypeAPI.PluginGUID)]
     [BepInDependency(LanguageAPI.PluginGUID)]
+   // [BepInDependency(SoundAPI.PluginGUID)]
 
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
 
@@ -39,7 +40,7 @@ namespace MegalomaniaPlugin
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "A5TR0spud";
         public const string PluginName = "Megalomania";
-        public const string PluginVersion = "1.2.1";
+        public const string PluginVersion = "1.3.0";
 
         public static AssetBundle megalomaniaAssetBundle;
         public static Sprite EgoPrimarySprite;
@@ -52,6 +53,8 @@ namespace MegalomaniaPlugin
         #region Constants and Configs
 
         public static ConfigEntry<bool> ConfigCompatibilityMode { get; set; }
+        //public static ConfigEntry<bool> ConfigLunarsOfExiguityIgnore { get; set; }
+        //public static ConfigEntry<bool> ConfigNoMoreLunarsIgnore { get; set; }
 
         #region defensive
         public static ConfigEntry<double> ConfigMaxHealthInitialStack { get; set; }
@@ -91,7 +94,8 @@ namespace MegalomaniaPlugin
         public static ConfigEntry<bool> ConfigBombStacking { get; set; }
         public static ConfigEntry<bool> ConfigPrimaryEnhancement { get; set; }
         public static ConfigEntry<bool> ConfigPassiveBombAttack { get; set; }
-        //public static ConfigEntry<bool> ConfigOnHitBombAttack { get; set; }
+        public static ConfigEntry<Utils.OnHitBombAttackType> ConfigOnHitBombAttack { get; set; }
+        public static ConfigEntry<BombDensity> ConfigBombFocused { get; set; }
         #endregion
 
         #region bomb stats
@@ -123,7 +127,7 @@ namespace MegalomaniaPlugin
         public static ConfigEntry<bool> ConfigStackSizeMatters {  get; set; }
         public static ConfigEntry<double> ConfigStackSizeMultiplier { get; set; }
         public static ConfigEntry<double> ConfigStackSizeAdder { get; set; }
-        public static ConfigEntry<string> ConfigConversionSelectionType { get; set; }
+        public static ConfigEntry<ConversionSelectionType> ConfigConversionSelectionType { get; set; }
         public static ConfigEntry<string> ConfigItemsToConvertTo { get; set; }
         public static ConfigEntry<string> ConfigRarityPriorityList { get; set; }
         public static ConfigEntry<string> ConfigItemPriorityList { get; set; }
@@ -133,21 +137,26 @@ namespace MegalomaniaPlugin
         #region skills
         public static ConfigEntry<string> ConfigSkillsInfo { get; set; }
 
-        public static ConfigEntry<string> ConfigPrimarySkill {  get; set; }
+        public static ConfigEntry<SkillEnum> ConfigPrimarySkill {  get; set; }
         public static ConfigEntry<bool> ConfigPrimaryReplacement { get; set; }
         public static ConfigEntry<bool> ConfigCorruptVisions { get; set; }
 
-        public static ConfigEntry<string> ConfigSecondarySkill { get; set; }
+        public static ConfigEntry<SkillEnum> ConfigSecondarySkill { get; set; }
         public static ConfigEntry<bool> ConfigSecondaryReplacement { get; set; }
         public static ConfigEntry<bool> ConfigCorruptHooks { get; set; }
 
-        public static ConfigEntry<string> ConfigUtilitySkill { get; set; }
+        public static ConfigEntry<SkillEnum> ConfigUtilitySkill { get; set; }
         public static ConfigEntry<bool> ConfigUtilityReplacement { get; set; }
         public static ConfigEntry<bool> ConfigCorruptStrides { get; set; }
 
-        public static ConfigEntry<string> ConfigSpecialSkill { get; set; }
+        public static ConfigEntry<SkillEnum> ConfigSpecialSkill { get; set; }
         public static ConfigEntry<bool> ConfigSpecialReplacement { get; set; }
         public static ConfigEntry<bool> ConfigCorruptEssence { get; set; }
+        #endregion
+
+        #region extras
+        //public static ConfigEntry<EgoDialogue> ConfigEgoSpeech { get; set; }
+       // public static ConfigEntry<bool> ConfigMegalovania { get; set; }
         #endregion
 
         #endregion
@@ -173,9 +182,11 @@ namespace MegalomaniaPlugin
             InitBuffs();
             InitItems();
             Utils.ParseRarityPriorityList();
-            Utils.ParseConversionSelectionType();
             InitSkills();
             Utils.initSkillsList();
+            
+           /* if (ConfigEgoSpeech.Value != EgoDialogue.none)
+                EgoSpeechDriver.init();*/
 
             //parse items after items have loaded
             On.RoR2.ItemCatalog.SetItemDefs += ItemCatalog_SetItemDefs;
@@ -188,13 +199,13 @@ namespace MegalomaniaPlugin
             On.RoR2.CharacterBody.OnInventoryChanged += CharacterBody_OnInventoryChanged;
 
             //everything from here on out is disabled in compatibility mode
-            if (ConfigCompatibilityMode.Value)
-                return;
+            if (!ConfigCompatibilityMode.Value)
+            {
+                //Override Egocentrism code, haha. Sorry mate.
+                megalomaniaEgoBehavior.init();
 
-            //Override Egocentrism code, haha. Sorry mate.
-            megalomaniaEgoBehavior.init();
-
-            LanguageUtils.start();
+                LanguageUtils.start();
+            }
         }
 
         private void CharacterBody_OnInventoryChanged(On.RoR2.CharacterBody.orig_OnInventoryChanged orig, CharacterBody self)
@@ -322,13 +333,21 @@ namespace MegalomaniaPlugin
         private void CreateConfig()
         {
             ConfigCompatibilityMode = Config.Bind("0. Main", "Compatibility Mode", false,
+               "Intended to be used when another Ego rework mod is installed.\n" +
                "If true, skips the hook to override Egocentrism in a couple of ways:\n" +
                "Disables all bomb stat and transformation over time changes.\n" +
                "Disables description override.\n" +
                "Other features that still work:\n" +
                "Stacking owner stats, such as health and movement speed.\n" +
-               "Transformation on stage start.\n" +
+               "Transformations on stage start.\n" +
                "Skill replacements.");
+
+            /*ConfigLunarsOfExiguityIgnore = Config.Bind("0. Main", "Lunars of Exiguity Exception", true,
+                "If true, Lunars of Exiguity no longer destroys additional stacks of Egocentrism. This may produce behavior unintended by either mod. Not recommended.\n" +
+                "If false and Lunars of Exiguity is installed, it's recommended to tone down transformations or buff the crap out of the stats.");
+            */
+            /*ConfigNoMoreLunarsIgnore = Config.Bind("0. Main", "No More Lunars Exception", true,
+                "If true, No More Lunars no longer removes Egocentrism from drop tables.");*/
 
             #region Stats
             // STATS
@@ -352,17 +371,21 @@ namespace MegalomaniaPlugin
                "Set cap to a negative value to disable the cap.");
             //Offense
             ConfigDamageInitialStack = Config.Bind("2. Stats - Offensive", "Initial Damage", 0.0,
-                "A percentage increase to damage on the initial stack.");
+                "A percentage increase to damage on the initial stack.\n" +
+                "0.02 = 2%");
             ConfigDamagePerStack = Config.Bind("2. Stats - Offensive", "Stacking Damage", 0.02,
-                "A percentage increase to damage per subsequent stack.");
+                "A percentage increase to damage per subsequent stack.\n" +
+                "0.02 = 2%");
 
             ConfigCritChanceInitialStack = Config.Bind("2. Stats - Offensive", "Initial Crit Chance", 0.01,
-                "A percentage increase to critical hit chance on the initial stack.");
+                "A percentage increase to critical hit chance on the initial stack.\n" +
+                "0.01 = 1%");
             ConfigCritChancePerStack = Config.Bind("2. Stats - Offensive", "Stacking Crit Chance", 0.01,
-                "A percentage increase to critical hit chance per subsequent stack.");
+                "A percentage increase to critical hit chance per subsequent stack.\n" +
+                "0.01 = 1%");
 
             ConfigAttackSpeedType = Config.Bind("2. Stats - Offensive", "Attack Speed Diminishing Returns", false,
-                "If true, attack speed will have dimishing returns, with the limit towards infinity approaching the bonus cap.\n" +
+                "If true, attack speed will have diminishing returns, with the limit towards infinity approaching the bonus cap.\n" +
                 "If false, attack speed will stack linearly and cap at the bonus cap.");
 
             ConfigAttackSpeedInitialStack = Config.Bind("2. Stats - Offensive", "Initial Attack Speed", 0.0,
@@ -375,7 +398,7 @@ namespace MegalomaniaPlugin
                 "In any mode, set cap to 0 to disable attack speed bonus entirely.");
             //Movement Speed
             ConfigMovementSpeedType = Config.Bind("3. Stats - Movement Speed", "Movement Speed Diminishing Returns", true,
-                "If true, movement speed will have dimishing returns, with the limit towards infinity approaching the bonus cap.\n" +
+                "If true, movement speed will have diminishing returns, with the limit towards infinity approaching the bonus cap.\n" +
                 "If false, movement speed will stack linearly and cap at the bonus cap.");
 
             ConfigMovementSpeedInitialStack = Config.Bind("3. Stats - Movement Speed", "Initial Movement Speed", 0.028,
@@ -399,10 +422,15 @@ namespace MegalomaniaPlugin
                 "If true, Egocentrism enhances your primary skill by firing Egocentrism bombs at enemies within 30 degrees of view.\n" +
                 "Comparable in activation to Shuriken.");
             ConfigPassiveBombAttack = Config.Bind("4. Bombs - Toggles", "Passive Bomb Attack", true,
-                "Whether the vanilla seeking behavior should apply. If a bomb collides with an enemy, it might still explode.");
-            /*ConfigOnHitBombAttack = Config.Bind("4. Bombs - Toggles", "On Hit: Bombs Attack", false,
-                "If true, then any damage done against an enemy will also target an Egocentrism bomb at that enemy.\n" +
-                "It doesn't care about proc coefficient (unless it's zero), but can't proc itself.");*/
+                "Whether the vanilla seeking behavior should apply. If a bomb collides with an enemy, it may still explode.");
+            ConfigOnHitBombAttack = Config.Bind("4. Bombs - Toggles", "On Hit: Bombs Attack", Utils.OnHitBombAttackType.none,
+                "If \"proc\", then any damage done against an enemy will have a 100% chance to also target an Egocentrism bomb at that enemy.\n" +
+                "If \"create\", then any damage done has a 30% chance to create a bomb and then immediately attempt to target a bomb to the struck enemy.\n" +
+                "If \"none\", it will behave as usual (doing nothing special).");
+            ConfigBombFocused = Config.Bind("4. Bombs - Toggles", "Bomb Density", BombDensity.asteroid_belt,
+                "If \"normal\", bombs will orbit with vanilla density.\n" +
+                "If \"oort_cloud\", bombs will be further spread out vertically.\n" +
+                "If \"asteroid_belt\", bombs will remain close to the owner.");
             //Stats
             ConfigBombCreationRate = Config.Bind("5. Bombs - Stats", "Initial Bomb Creation Rate", 3.0,
                 "How many seconds it takes to generate a bomb at stack size 1.");
@@ -482,13 +510,13 @@ namespace MegalomaniaPlugin
                 "Eg: A weighted item at 10 and an adder of 5 would stack 10 -> 15 -> 20 -> 25\n" +
                 "Eg: A weighted item at 50 and an adder of 0.5 would stack 50 -> 50 (50.5) -> 51 -> 51 (51.5)");
 
-            ConfigConversionSelectionType = Config.Bind("6. Transform - Rules", "Conversion Selection Type", "Weighted",
-                "Determines method for choosing items. Case insensitive. Allowed values:\n" +
-                "Weighted: tends towards higher weighted items and tiers but maintains randomness.\n" +
-                "Priority: always chooses the highest priority item available. If there's a tie, selects one at random.");
+            ConfigConversionSelectionType = Config.Bind("6. Transform - Rules", "Conversion Selection Type", Utils.ConversionSelectionType.weighted,
+                "Determines method for choosing items. Case sensitive. Allowed values:\n" +
+                "weighted: tends towards higher weighted items and tiers but maintains randomness.\n" +
+                "priority: always chooses the highest priority item available. If there's a tie, selects one at random.");
 
             ConfigItemsToConvertTo = Config.Bind("6. Transform - Rules", "Items To Convert To",
-                "LunarSun:1",
+                "LunarSun:1, ",
                 "A list of item that Egocentrism can convert other items into. Items cannot be converted into themselves.\n" +
                 "If this is empty, conversion is disabled completely.\n" +
                 "If an item does not make an appearance in this list or has a value of 0, that item cannot be converted into.\n" +
@@ -506,8 +534,8 @@ namespace MegalomaniaPlugin
                 "Format: tier1:integer, tier2:int, tier3:i, etc\n" +
                 "Case insensitive, mostly whitespace insensitive.\n" +
                 "Valid Tiers:\n" +
-                "white,green,red,blue,yellow,voidwhite,voidgreen,voidred,voidyellow,\n" +
-                "common,uncommon,legendary,lunar,boss,voidcommon,voiduncommon,voidlegendary,voidboss");
+                "white, green, red, blue, yellow, voidwhite, voidgreen, voidred, voidyellow, \n" +
+                "common, uncommon, legendary, lunar, boss, voidcommon, voiduncommon, voidlegendary, voidboss");
 
             ConfigItemPriorityList = Config.Bind("6. Transform - Rules", "Item:Priority List",
                 "BeetleGland:5, GhostOnKill:5, MinorConstructOnKill:5, RoboBallBuddy:10, ScrapGreen:30, ScrapWhite:10, ScrapYellow:60, ScrapRed:20, RegeneratingScrap:-20, ExtraStatsOnLevelUp:15, FreeChest:-20, ExtraShrineItem:10, CloverVoid:15, LowerPricedChests:-20, ResetChests:-5",
@@ -539,7 +567,7 @@ namespace MegalomaniaPlugin
 
             string allowedSkillValues = "conceit, minigun, bomb, twinshot, shell, monopolize";
 
-            ConfigPrimarySkill = Config.Bind("7.1 Skills - Primary", "Skill to Use", "conceit",
+            ConfigPrimarySkill = Config.Bind("7.1 Skills - Primary", "Skill to Use", SkillEnum.conceit,
                 "What skill to replace primary with.\n" +
                 $"Allowed values: {allowedSkillValues}");
             ConfigPrimaryReplacement = Config.Bind("7.1 Skills - Primary", "Enable Primary Replacement", true,
@@ -548,7 +576,7 @@ namespace MegalomaniaPlugin
                 "If true, Visions of Heresy is corrupted into Egocentrism when replacement is enabled.\n" +
                 "If false, Visions of Heresy's \"Hungering Gaze\" skill overrides Ego skill replacement.");
 
-            ConfigSecondarySkill = Config.Bind("7.2 Skills - Secondary", "Skill to Use", "bomb",
+            ConfigSecondarySkill = Config.Bind("7.2 Skills - Secondary", "Skill to Use", SkillEnum.bomb,
                 "What skill to replace secondary with.\n" +
                 $"Allowed values: {allowedSkillValues}");
             ConfigSecondaryReplacement = Config.Bind("7.2 Skills - Secondary", "Enable Secondary Replacement", false,
@@ -557,7 +585,7 @@ namespace MegalomaniaPlugin
                 "If true, Hooks of Heresy is corrupted into Egocentrism when replacement is enabled.\n" +
                 "If false, Hooks of Heresy's \"Slicing Maelstrom\" skill overrides Ego skill replacement.");
 
-            ConfigUtilitySkill = Config.Bind("7.3 Skills - Utility", "Skill to Use", "shell",
+            ConfigUtilitySkill = Config.Bind("7.3 Skills - Utility", "Skill to Use", SkillEnum.shell,
                 "What skill to replace utility with.\n" +
                 $"Allowed values: {allowedSkillValues}");
             ConfigUtilityReplacement = Config.Bind("7.3 Skills - Utility", "Enable Utility Replacement", false,
@@ -566,7 +594,7 @@ namespace MegalomaniaPlugin
                 "If true, Strides of Heresy is corrupted into Egocentrism when replacement is enabled.\n" +
                 "If false, Strides of Heresy's \"Shadowfade\" skill overrides Ego skill replacement.");
 
-            ConfigSpecialSkill = Config.Bind("7.4 Skills - Special", "Skill to Use", "monopolize",
+            ConfigSpecialSkill = Config.Bind("7.4 Skills - Special", "Skill to Use", SkillEnum.monopolize,
                 "What skill to replace special with.\n" +
                 $"Allowed values: {allowedSkillValues}");
             ConfigSpecialReplacement = Config.Bind("7.4 Skills - Special", "Enable Special Replacement", false,
@@ -574,6 +602,14 @@ namespace MegalomaniaPlugin
             ConfigCorruptEssence = Config.Bind("7.4 Skills - Special", "Corrupt Essence of Heresy", true,
                 "If true, Essence of Heresy is corrupted into Egocentrism when replacement is enabled.\n" +
                 "If false, Essence of Heresy's \"Ruin\" skill overrides Ego skill replacement.");
+            #endregion
+
+            #region extras
+            /*ConfigEgoSpeech = Config.Bind("8. Extras", "She Criticizes Me For Being Egocentric", EgoDialogue.none,
+                "Adds corresponding messages in chat when relevant events occur.\n" +
+                "Allowed values: \"none\", \"mithrix\", \"false_son\"");*/
+            //ConfigMegalovania = Config.Bind("8. Extras", "V", false,
+             //   "Plays the first 4 notes of Megalovania when Egocentrism transforms an item.");
             #endregion
 
             ConfigCleanup();
