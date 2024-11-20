@@ -9,7 +9,7 @@ namespace MegalomaniaPlugin.Items
 {
     public class EgoSpeechDriver
     {
-        public static void init()
+        /*public static void init()
         {
             On.RoR2.HealthComponent.TakeDamageProcess += HealthComponent_TakeDamageProcess;
         }
@@ -30,6 +30,6 @@ namespace MegalomaniaPlugin.Items
                 Chat.AddMessage(msg);
                 Chat.SendBroadcastChat(msg);
             }
-        }
+        }*/
     }
 }

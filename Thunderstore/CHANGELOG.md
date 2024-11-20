@@ -3,7 +3,6 @@
 
 - Added On Hit Bomb Attack config option
 - Added Bomb Density config option
-- Added Extras section to config
 - Checked the spelling of some config titles and descriptions
 - Adjusted config in various ways to better support Gale mod manager
 - Fixed language override not working?
