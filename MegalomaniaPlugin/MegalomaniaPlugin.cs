@@ -31,6 +31,7 @@ namespace MegalomaniaPlugin
     [BepInDependency(RecalculateStatsAPI.PluginGUID)]
     [BepInDependency(ProcTypeAPI.PluginGUID)]
     [BepInDependency(LanguageAPI.PluginGUID)]
+    [BepInDependency(SoundAPI.PluginGUID)]
 
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
 
@@ -153,6 +154,11 @@ namespace MegalomaniaPlugin
         public static ConfigEntry<bool> ConfigCorruptEssence { get; set; }
         #endregion
 
+        #region extras
+        public static ConfigEntry<EgoDialogue> ConfigEgoSpeech { get; set; }
+       // public static ConfigEntry<bool> ConfigMegalovania { get; set; }
+        #endregion
+
         #endregion
 
         #region Items
@@ -178,6 +184,9 @@ namespace MegalomaniaPlugin
             Utils.ParseRarityPriorityList();
             InitSkills();
             Utils.initSkillsList();
+            
+            if (ConfigEgoSpeech.Value != EgoDialogue.none)
+                EgoSpeechDriver.init();
 
             //parse items after items have loaded
             On.RoR2.ItemCatalog.SetItemDefs += ItemCatalog_SetItemDefs;
@@ -190,13 +199,13 @@ namespace MegalomaniaPlugin
             On.RoR2.CharacterBody.OnInventoryChanged += CharacterBody_OnInventoryChanged;
 
             //everything from here on out is disabled in compatibility mode
-            if (ConfigCompatibilityMode.Value)
-                return;
+            if (!ConfigCompatibilityMode.Value)
+            {
+                //Override Egocentrism code, haha. Sorry mate.
+                megalomaniaEgoBehavior.init();
 
-            //Override Egocentrism code, haha. Sorry mate.
-            megalomaniaEgoBehavior.init();
-
-            LanguageUtils.start();
+                LanguageUtils.start();
+            }
         }
 
         private void CharacterBody_OnInventoryChanged(On.RoR2.CharacterBody.orig_OnInventoryChanged orig, CharacterBody self)
@@ -593,6 +602,14 @@ namespace MegalomaniaPlugin
             ConfigCorruptEssence = Config.Bind("7.4 Skills - Special", "Corrupt Essence of Heresy", true,
                 "If true, Essence of Heresy is corrupted into Egocentrism when replacement is enabled.\n" +
                 "If false, Essence of Heresy's \"Ruin\" skill overrides Ego skill replacement.");
+            #endregion
+
+            #region extras
+            ConfigEgoSpeech = Config.Bind("8. Extras", "She Criticizes Me For Being Egocentric", EgoDialogue.none,
+                "Adds corresponding messages in chat when relevant events occur.\n" +
+                "Allowed values: \"none\", \"mithrix\", \"false_son\"");
+            //ConfigMegalovania = Config.Bind("8. Extras", "V", false,
+             //   "Plays the first 4 notes of Megalovania when Egocentrism transforms an item.");
             #endregion
 
             ConfigCleanup();

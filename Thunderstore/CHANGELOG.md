@@ -3,8 +3,9 @@
 
 - Added On Hit Bomb Attack config option
 - Added Bomb Density config option
-- Checked the spelling of config titles and descriptions
-- Adjusted config in various ways to better support Gale (mod manager)
+- Added Extras section to config
+- Checked the spelling of some config titles and descriptions
+- Adjusted config in various ways to better support Gale mod manager
 - Fixed language override not working?
 
 ## 1.2.1 - *SotS 1.3.5 Fix*

@@ -1,9 +1,11 @@
 ﻿using BepInEx;
 using MegalomaniaPlugin.Skills;
 using MegalomaniaPlugin.Skills.MinigunAbility;
+using R2API;
 using RoR2;
 using RoR2.Orbs;
 using RoR2.Skills;
+using RoR2.WwiseUtils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -88,6 +90,14 @@ namespace MegalomaniaPlugin.Utilities
             normal,
             oort_cloud,
             asteroid_belt
+        }
+
+        //this makes 6 enums specifically for config purposes,, i love gale
+        public enum EgoDialogue : uint
+        {
+            none,
+            mithrix,
+            false_son
         }
 
         private static Dictionary<SkillEnum, SkillDef> SkillLookup { get; set; }
@@ -243,6 +253,9 @@ namespace MegalomaniaPlugin.Utilities
 
                 amount--;
             }
+
+            //SoundAPI.SoundBanks.
+           // Util.PlaySound();
 
             return toReturn;
         }
