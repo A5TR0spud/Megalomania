@@ -415,7 +415,7 @@ namespace MegalomaniaPlugin.Utilities
                 //if there's an incorrect amount of colons, skip
                 if (ItePrio.Length != 2)
                 {
-                    Log.Warning($"(ConvertTo) Invalid amount of colons: `{iP}`");
+                    Log.Warning($"(ConvertTo) Invalid amount of colons: '{iP}'");
                     continue;
                 }
                 string indexString = ItePrio[0].Trim();
@@ -423,31 +423,31 @@ namespace MegalomaniaPlugin.Utilities
                 //if either side of the colon is blank, skip
                 if (indexString.IsNullOrWhiteSpace() || priorityString.IsNullOrWhiteSpace())
                 {
-                    Log.Warning($"(ConvertTo) Invalid empty item or priority: `{iP}`");
+                    Log.Warning($"(ConvertTo) Invalid empty item or priority: '{iP}'");
                     continue;
                 }
                 int priority;
                 //if the priority is not an integer, skip
                 if (!int.TryParse(priorityString, out priority))
                 {
-                    Log.Warning($"(ConvertTo) Invalid priority: `{iP}`");
+                    Log.Warning($"(ConvertTo) Invalid priority: '{iP}'");
                     continue;
                 }
                 //if the item is undefined, skip
                 ItemIndex index = ItemCatalog.FindItemIndex(indexString);
                 if (index == ItemIndex.None)
                 {
-                    Log.Warning($"(ConvertTo) Invalid item: `{iP}`");
+                    Log.Warning($"(ConvertTo) Invalid item: '{iP}'");
                     continue;
                 }
                 //if the rarity is already in the list, skip
                 if (parsedItemConvertToList.ContainsKey(index))
                 {
-                    Log.Warning($"(ConvertTo) Item already in list: `{iP}`");
+                    Log.Warning($"(ConvertTo) Item already in list: '{iP}'");
                     continue;
                 }
                 parsedItemConvertToList.Add(index, priority);
-                Log.Info($"(ConvertTo) Item:Priority added! `{iP}`");
+                Log.Info($"(ConvertTo) Item:Priority added! '{iP}'");
             }
         }
 
@@ -463,7 +463,7 @@ namespace MegalomaniaPlugin.Utilities
                 //if there's an incorrect amount of colons, skip
                 if (Rapier.Length != 2)
                 {
-                    Log.Warning($"(Rarity:Priority) Invalid amount of colons: `{rP}`");
+                    Log.Warning($"(Rarity:Priority) Invalid amount of colons: '{rP}'");
                     continue;
                 }
                 string tierString = Rapier[0].Trim().ToLower();
@@ -471,20 +471,20 @@ namespace MegalomaniaPlugin.Utilities
                 //if either side of the colon is blank, skip
                 if (tierString.IsNullOrWhiteSpace() || priorityString.IsNullOrWhiteSpace())
                 {
-                    Log.Warning($"(Rarity:Priority) Invalid empty tier or priority: `{rP}`");
+                    Log.Warning($"(Rarity:Priority) Invalid empty tier or priority: '{rP}'");
                     continue;
                 }
                 int priority;
                 //if the priority is not an integer, skip
                 if (!int.TryParse(priorityString, out priority) || priority < 0)
                 {
-                    Log.Warning($"(Rarity:Priority) Invalid priority: `{rP}`");
+                    Log.Warning($"(Rarity:Priority) Invalid priority: '{rP}'");
                     continue;
                 }
                 //if the rarity is undefined, skip
                 if (!Enum.TryParse(tierString, out ItemTierLookup tier))
                 {
-                    Log.Warning($"(Rarity:Priority) Invalid rarity: `{rP}`");
+                    Log.Warning($"(Rarity:Priority) Invalid rarity: '{rP}'");
                     continue;
                 }
                 //if the priority is 0, skip
@@ -497,11 +497,11 @@ namespace MegalomaniaPlugin.Utilities
                 //if the rarity is already in the list, skip
                 if (parsedRarityPriorityList.ContainsKey(rarity))
                 {
-                    Log.Warning($"(Rarity:Priority) Rarity already in list: `{rP}`");
+                    Log.Warning($"(Rarity:Priority) Rarity already in list: '{rP}'");
                     continue;
                 }
                 parsedRarityPriorityList.Add(rarity, priority);
-                Log.Info($"(Rarity:Priority) Rarity:Priority added! `{rP}`");
+                Log.Info($"(Rarity:Priority) Rarity:Priority added! '{rP}'");
             }
         }
 
@@ -517,7 +517,7 @@ namespace MegalomaniaPlugin.Utilities
                 //if there's an incorrect amount of colons, skip
                 if (ItePrio.Length != 2)
                 {
-                    Log.Warning($"(Item:Priority) Invalid amount of colons: `{iP}`");
+                    Log.Warning($"(Item:Priority) Invalid amount of colons: '{iP}'");
                     continue;
                 }
                 string indexString = ItePrio[0].Trim();
@@ -525,31 +525,31 @@ namespace MegalomaniaPlugin.Utilities
                 //if either side of the colon is blank, skip
                 if (indexString.IsNullOrWhiteSpace() || priorityString.IsNullOrWhiteSpace())
                 {
-                    Log.Warning($"(Item:Priority) Invalid empty item or priority: `{iP}`");
+                    Log.Warning($"(Item:Priority) Invalid empty item or priority: '{iP}'");
                     continue;
                 }
                 int priority;
                 //if the priority is not an integer, skip
                 if (!int.TryParse(priorityString, out priority))
                 {
-                    Log.Warning($"(Item:Priority) Invalid priority: `{iP}`");
+                    Log.Warning($"(Item:Priority) Invalid priority: '{iP}'");
                     continue;
                 }
                 //if the item is undefined, skip
                 ItemIndex index = ItemCatalog.FindItemIndex(indexString);
                 if (index == ItemIndex.None)
                 {
-                    Log.Warning($"(Item:Priority) Invalid item: `{iP}`");
+                    Log.Warning($"(Item:Priority) Invalid item: '{iP}'");
                     continue;
                 }
                 //if the rarity is already in the list, skip
                 if (parsedItemPriorityList.ContainsKey(index))
                 {
-                    Log.Warning($"(Item:Priority) Item already in list: `{iP}`");
+                    Log.Warning($"(Item:Priority) Item already in list: '{iP}'");
                     continue;
                 }
                 parsedItemPriorityList.Add(index, priority);
-                Log.Info($"(Item:Priority) Item:Priority added! `{iP}`");
+                Log.Info($"(Item:Priority) Item:Priority added! '{iP}'");
             }
         }
     }
