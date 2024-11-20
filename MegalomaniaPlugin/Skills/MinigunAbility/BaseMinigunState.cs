@@ -66,7 +66,6 @@ namespace MegalomaniaPlugin.Skills.MinigunAbility
                 bulletAttack.minSpread = 0f;
                 bulletAttack.hitEffectPrefab = hitEffectPrefab;
                 bulletAttack.maxSpread = 2f;
-                bulletAttack.smartCollision = false;
                 bulletAttack.sniper = false;
                 bulletAttack.spreadPitchScale = spreadPitchScale;
                 bulletAttack.spreadYawScale = spreadYawScale;

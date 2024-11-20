@@ -56,8 +56,8 @@ namespace MegalomaniaPlugin.Items
 
                 On.RoR2.LunarSunBehavior.InitializeOrbiter += LunarSunBehavior_InitializeOrbiter;
             }
-                
-            
+
+
             On.RoR2.LunarSunBehavior.FixedUpdate += LunarSunBehavior_FixedUpdate;
             On.RoR2.LunarSunBehavior.GetMaxProjectiles += LunarSunBehavior_GetMaxProjectiles;
 
@@ -126,89 +126,108 @@ namespace MegalomaniaPlugin.Items
         {
             orig(self, damageInfo, victim);
 
+            handleEgoProc(damageInfo, victim);
+        }
+
+        private static void handleEgoProc(DamageInfo damageInfo, GameObject victim)
+        {
+            if (damageInfo == null)
+                return;
+            if (victim == null || !(bool)victim)
+                return;
+
             //copied from base
-            /*if (damageInfo.procCoefficient == 0f || damageInfo.rejected || !NetworkServer.active)
+            if (damageInfo.procCoefficient == 0f || damageInfo.rejected || !NetworkServer.active)
             {
                 return;
             }
-            if (!damageInfo.attacker || !(damageInfo.procCoefficient > 0f))
+            if (damageInfo.attacker == null || !damageInfo.attacker || !(damageInfo.procCoefficient > 0f))
             {
                 return;
-            }*/
-
-            bool doTheRoar = true;
+            }
 
             ProcChainMask procChainMask = damageInfo.procChainMask;
 
             //further tests for on hit bomb attack
             //this is such bad... this is not good code
+
+            CharacterMaster master = null;
+            int egoCount = 0;
+
             if (MegalomaniaPlugin.ConfigOnHitBombAttack.Value == Utils.OnHitBombAttackType.none
                 || procChainMask.HasModdedProc(LunarSunBombProc))
-                doTheRoar = false;
-            CharacterBody attacker = damageInfo.attacker.GetComponent<CharacterBody>();
-            if (!(bool)attacker)
-                doTheRoar = false;
-            CharacterMaster master = attacker.master;
-            if (!(bool)master)
-                doTheRoar = false;
-            Inventory inventory = attacker.inventory;
-            if (!(bool)inventory)
+                return;
+            CharacterBody attackerBody = null;
+            GameObject a1 = damageInfo.attacker;
+
+            if (a1 != null && (bool)a1)
+                attackerBody = damageInfo.attacker.GetComponent<CharacterBody>();
+            else
+                return;
+            if (attackerBody == null || !(bool)attackerBody)
+                return;
+            master = attackerBody.master;
+            if (master == null || !(bool)master)
+                return;
+            Inventory inventory = attackerBody.inventory;
+            if (inventory == null || !(bool)inventory)
                 inventory = master.inventory;
-            if (!(bool)inventory)
-                doTheRoar = false;
-            int egoCount = inventory.GetItemCount(DLC1Content.Items.LunarSun);
+            if ((bool)inventory)
+                egoCount = inventory.GetItemCount(DLC1Content.Items.LunarSun);
+            else
+                return;
             if (egoCount < 1)
-                doTheRoar = false;
+                return;
+
 
             CharacterBody victimBody = (victim ? victim.GetComponent<CharacterBody>() : null);
             HurtBox target = null;
             if (victimBody != null && (bool)victimBody)
                 target = victimBody.mainHurtBox;
             if (target == null || !(bool)target)
-                doTheRoar = false;
-
+                return;
             //letsago
-            if (doTheRoar)
+            bool doTarget = false;
+            if (MegalomaniaPlugin.ConfigOnHitBombAttack.Value == Utils.OnHitBombAttackType.proc
+                && Util.CheckRoll(100f * damageInfo.procCoefficient, master.luck, master))
             {
-                bool doTarget = false;
-                if (MegalomaniaPlugin.ConfigOnHitBombAttack.Value == Utils.OnHitBombAttackType.proc
-                    && Util.CheckRoll(100f * damageInfo.procCoefficient, master.luck, master))
+                procChainMask.AddModdedProc(LunarSunBombProc);
+                doTarget = true;
+            }
+            else if (MegalomaniaPlugin.ConfigOnHitBombAttack.Value == Utils.OnHitBombAttackType.create
+                && Util.CheckRoll(30f * damageInfo.procCoefficient, master.luck, master))
+            {
+                procChainMask.AddModdedProc(LunarSunBombProc);
+                if (!master.IsDeployableLimited(DeployableSlot.LunarSunBomb))
                 {
-                    procChainMask.AddModdedProc(LunarSunBombProc);
-                    doTarget = true;
+                    FireProjectileInfo bombInfo = createBombInfo(attackerBody, egoCount);
+                    bombInfo.procChainMask = procChainMask;
+                    setupBombGen(egoCount, false);
+                    ProjectileManager.instance.FireProjectile(bombInfo);
                 }
-                else if (MegalomaniaPlugin.ConfigOnHitBombAttack.Value == Utils.OnHitBombAttackType.create
-                    && Util.CheckRoll(30f * damageInfo.procCoefficient, master.luck, master))
-                {
-                    procChainMask.AddModdedProc(LunarSunBombProc);
-                    if (!master.IsDeployableLimited(DeployableSlot.LunarSunBomb))
-                    {
-                        FireProjectileInfo bombInfo = createBombInfo(attacker, egoCount);
-                        bombInfo.procChainMask = procChainMask;
-                        setupBombGen(egoCount, false);
-                        ProjectileManager.instance.FireProjectile(bombInfo);
-                    }
-                    doTarget = true;
-                }
+                doTarget = true;
+            }
 
-                if (doTarget)
+            if (doTarget)
+            {
+                List<DeployableInfo> list = attackerBody.master.deployablesList;
+                if (list == null)
+                    return;
+                foreach (DeployableInfo info in list)
                 {
-                    List<DeployableInfo> list = attacker.master.deployablesList;
-                    foreach (DeployableInfo info in list)
+                    if (info.slot == DeployableSlot.LunarSunBomb)
                     {
-                        if (info.slot == DeployableSlot.LunarSunBomb)
-                        {
-                            ProjectileSphereTargetFinder targetFinder = info.deployable.gameObject.GetComponent<ProjectileSphereTargetFinder>();
-                            if (!(bool)targetFinder)
-                                continue;
-                            if (targetFinder.hasTarget)
-                                continue;
-
-                            targetFinder.SetTarget(target);
-                            targetFinder.onlySearchIfNoTarget = true;
-                            targetFinder.testLoS = false;
-                            break;
-                        }
+                        ProjectileSphereTargetFinder targetFinder = info.deployable.gameObject.GetComponent<ProjectileSphereTargetFinder>();
+                        if (targetFinder == null)
+                            continue;
+                        if (!(bool)targetFinder)
+                            continue;
+                        if (targetFinder.hasTarget)
+                            continue;
+                        targetFinder.SetTarget(target);
+                        targetFinder.onlySearchIfNoTarget = true;
+                        targetFinder.testLoS = false;
+                        break;
                     }
                 }
             }
@@ -322,7 +341,7 @@ namespace MegalomaniaPlugin.Items
             Xoroshiro128Plus transformRng = self.GetFieldValue<Xoroshiro128Plus>("transformRng");
             projectileTimer += Time.fixedDeltaTime;
 
-            if ((bool)projectilePrefab && projectilePrefab != null && MegalomaniaPlugin.ConfigEnableBombs.Value)
+            if (projectilePrefab != null && (bool)projectilePrefab && MegalomaniaPlugin.ConfigEnableBombs.Value)
                 handleBombs(body, ref projectileTimer, stack, projectilePrefab);
 
             if (MegalomaniaPlugin.ConfigTransformTime.Value >= 0)
@@ -339,6 +358,13 @@ namespace MegalomaniaPlugin.Items
 
         private static void handleBombs(CharacterBody body, ref float projectileTimer, int stack, GameObject projectilePrefab)
         {
+            if (body == null || !(bool)body)
+                return;
+            if (body.master == null || !(bool)body.master)
+                return;
+            if (projectilePrefab == null || !(bool)projectilePrefab)
+                return;
+
             float denominator = (stack - 1) * (float)MegalomaniaPlugin.ConfigBombCreationStackingMultiplier.Value + 1;
             if (!body.master.IsDeployableLimited(DeployableSlot.LunarSunBomb) &&
                 projectileTimer > MegalomaniaPlugin.ConfigBombCreationRate.Value / denominator + MegalomaniaPlugin.ConfigBombCreationStackingAdder.Value * stack)
