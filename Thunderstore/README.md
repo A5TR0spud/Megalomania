@@ -1,7 +1,10 @@
 # Megalomania
 
-Not entirely tested. Contact me on discord @A5TR0spud.
-Github repo: https://github.com/A5TR0spud/Megalomania/tree/master
+Not entirely tested. Contact me on the RoR2 modding discord or my server @A5TR0spud.
+
+Github repo: <https://github.com/A5TR0spud/Megalomania/tree/master>
+
+My Discord: <https://discord.gg/StBXkB86aT>
 
 By default:
 

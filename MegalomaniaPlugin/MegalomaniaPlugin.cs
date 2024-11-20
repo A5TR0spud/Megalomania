@@ -40,7 +40,7 @@ namespace MegalomaniaPlugin
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "A5TR0spud";
         public const string PluginName = "Megalomania";
-        public const string PluginVersion = "1.3.0";
+        public const string PluginVersion = "1.3.1";
 
         public static AssetBundle megalomaniaAssetBundle;
         public static Sprite EgoPrimarySprite;
@@ -516,7 +516,7 @@ namespace MegalomaniaPlugin
                 "priority: always chooses the highest priority item available. If there's a tie, selects one at random.");
 
             ConfigItemsToConvertTo = Config.Bind("6. Transform - Rules", "Items To Convert To",
-                "LunarSun:1, ",
+                "LunarSun:1",
                 "A list of item that Egocentrism can convert other items into. Items cannot be converted into themselves.\n" +
                 "If this is empty, conversion is disabled completely.\n" +
                 "If an item does not make an appearance in this list or has a value of 0, that item cannot be converted into.\n" +

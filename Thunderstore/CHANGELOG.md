@@ -1,4 +1,13 @@
 
+## 1.3.1
+
+- Updated readme (discord) and description (etc+) a little bit
+- Fixed default ConvertTo config causing a warning
+- Fixed NRE caused by Lunar Minigun ability ending when used by Engineer turrets
+- Fixed NRE caused by damage?
+- Fixed NRE caused by bomb generation?
+- Fixed NRE caused by Engineer turrets using Lunar Minigun trying to trigger Ego procs?
+
 ## 1.3.0
 
 - Added On Hit Bomb Attack config option
